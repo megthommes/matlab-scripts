@@ -57,18 +57,18 @@ end
 model.rxns = cell(numRxns,1);
 model.rxnNames = cell(numRxns,1);
 model.rxnCompts = cell(numRxns,1);
-model.lb = cell(numRxns,1);
-model.ub = cell(numRxns,1);
-model.rev = cell(numRxns,1);
-model.c = cell(numRxns,1);
+model.lb = zeros(numRxns,1);
+model.ub = zeros(numRxns,1);
+model.rev = zeros(numRxns,1);
+model.c = zeros(numRxns,1);
 for rxn = 1:numRxns
     model.rxns{rxn} = MATLAB_model.Reactions(rxn).ID; % reaction IDs (n x 1)
     model.rxnNames{rxn} = MATLAB_model.Reactions(rxn).Name; % eaction names (n x 1)
     model.rxnCompts{rxn} = MATLAB_model.Reactions(rxn).Compartment; % reaction compartments (n x 1)
-    model.lb{rxn} = MATLAB_model.Reactions(rxn).LowerBound; % lower bounds (n x 1)
-    model.ub{rxn} = MATLAB_model.Reactions(rxn).UpperBound; % upper bounds (n x 1)
-    model.rev{rxn} = MATLAB_model.Reactions(rxn).Reversible; % reaction reversibility (n x 1)
-    model.c{rxn} = MATLAB_model.Reactions(rxn).ObjectiveCoefficient; % objective coefficients (n x 1)
+    model.lb(rxn) = MATLAB_model.Reactions(rxn).LowerBound; % lower bounds (n x 1)
+    model.ub(rxn) = MATLAB_model.Reactions(rxn).UpperBound; % upper bounds (n x 1)
+    model.rev(rxn) = MATLAB_model.Reactions(rxn).Reversible; % reaction reversibility (n x 1)
+    model.c(rxn) = MATLAB_model.Reactions(rxn).ObjectiveCoefficient; % objective coefficients (n x 1)
 end
 
 
