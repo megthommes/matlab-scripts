@@ -37,7 +37,7 @@ end
 
 MATLAB_model = sbml2model(TranslateSBML(fileName));
 
-model.description = MATLAB_model.name; % model name
+model.description = MATLAB_model.Name; % model name
 model.ID = MATLAB_model.ID; % model ID
 model.S = MATLAB_model.S; % stoichiometric matrix (m x n)
 
