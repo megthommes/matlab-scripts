@@ -14,6 +14,7 @@ function model = sbml2struct(fileName)
 % model.metNames      Metabolite names (m x 1)
 % model.metCompts     Metabolite compartments (m x 1)
 % model.metFormulas   Metabolite chemical formula (m x 1)
+% model.b             Right-hand side of FBA problem (m x 1)
 % model.rxns          Reaction IDs (n x 1)
 % model.rxnNames      Reaction names (n x 1)
 % model.rxnCompts     Reaction compartments (n x 1)
@@ -21,7 +22,6 @@ function model = sbml2struct(fileName)
 % model.ub            Upper bounds (n x 1)
 % model.rev           Reaction reversibility (n x 1)
 % model.c             Objective coefficients: 1 if objective, 0 if other (n x 1)
-% model.b             Right-hand side of FBA problem (n x 1)
 %
 % 01/04/2016 Meghan Thommes - added ID & b fields
 % 09/15/2015 Meghan Thommes
@@ -48,6 +48,8 @@ model.S = MATLAB_model.S; % stoichiometric matrix (m x n)
 model.mets = cell(numMets,1);
 model.metNames = cell(numMets,1);
 model.metCompts = cell(numMets,1);
+model.metFormulas = cell(numMets,1);
+model.b = zeros(numMets,1);
 for met = 1:numMets
     model.mets{met} = MATLAB_model.Metabolites(met).ID; % metabolite IDs (m x 1)
     model.metNames{met} = MATLAB_model.Metabolites(met).Name; % metabolite names (m x 1)
@@ -63,7 +65,6 @@ model.lb = zeros(numRxns,1);
 model.ub = zeros(numRxns,1);
 model.rev = zeros(numRxns,1);
 model.c = zeros(numRxns,1);
-model.b = zeros(numRxns,1);
 for rxn = 1:numRxns
     model.rxns{rxn} = MATLAB_model.Reactions(rxn).ID; % reaction IDs (n x 1)
     model.rxnNames{rxn} = MATLAB_model.Reactions(rxn).Name; % eaction names (n x 1)
