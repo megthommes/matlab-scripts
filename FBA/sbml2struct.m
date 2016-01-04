@@ -21,8 +21,9 @@ function model = sbml2struct(fileName)
 % model.ub            Upper bounds (n x 1)
 % model.rev           Reaction reversibility (n x 1)
 % model.c             Objective coefficients: 1 if objective, 0 if other (n x 1)
+% model.b             Right-hand side of FBA problem (n x 1)
 %
-% 01/04/2016 Meghan Thommes - added ID field
+% 01/04/2016 Meghan Thommes - added ID & b fields
 % 09/15/2015 Meghan Thommes
 
 %% Validate Inputs
@@ -62,6 +63,7 @@ model.lb = zeros(numRxns,1);
 model.ub = zeros(numRxns,1);
 model.rev = zeros(numRxns,1);
 model.c = zeros(numRxns,1);
+model.b = zeros(numRxns,1);
 for rxn = 1:numRxns
     model.rxns{rxn} = MATLAB_model.Reactions(rxn).ID; % reaction IDs (n x 1)
     model.rxnNames{rxn} = MATLAB_model.Reactions(rxn).Name; % eaction names (n x 1)
