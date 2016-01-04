@@ -8,6 +8,7 @@ function model = sbml2struct(fileName)
 %OUTPUT
 % Returns a MATLAB structure with the following fields:
 % model.description   Model name (string)
+% model.ID            Model ID (string)
 % model.S             Stoichiometric matrix (m x n)
 % model.mets          Metabolite IDs (m x 1)
 % model.metNames      Metabolite names (m x 1)
@@ -21,7 +22,8 @@ function model = sbml2struct(fileName)
 % model.rev           Reaction reversibility (n x 1)
 % model.c             Objective coefficients: 1 if objective, 0 if other (n x 1)
 %
-% 9/15/2015 Meghan Thommes
+% 01/04/2016 Meghan Thommes - added ID field
+% 09/15/2015 Meghan Thommes
 
 %% Validate Inputs
 
@@ -33,11 +35,10 @@ end
 
 %%
 
-SBML_model = TranslateSBML(fileName);
+MATLAB_model = sbml2model(TranslateSBML(fileName));
 
-MATLAB_model = sbml2model(SBML_model);
-
-model.description = MATLAB_model.ID; % model name
+model.description = MATLAB_model.name; % model name
+model.ID = MATLAB_model.ID; % model ID
 model.S = MATLAB_model.S; % stoichiometric matrix (m x n)
 
 [numMets,numRxns] = size(model.S);
