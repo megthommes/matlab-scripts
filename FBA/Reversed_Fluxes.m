@@ -31,7 +31,7 @@ new_model.ub(fakeExchRxns) = -1.*model.lb(fakeExchRxns);
 fprintf('\n')
 % Objective Value
 sol = FBA(new_model);
-disp(['Growth Flux is ' num2str(sol.objval)])
+disp(['Growth Flux is ' num2str(sol.objectiveValue)])
 disp(['Status is ' sol.status])
 
 end
