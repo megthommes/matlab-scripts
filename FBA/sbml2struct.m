@@ -23,6 +23,7 @@ function model = sbml2struct(fileName)
 % model.rev           Reaction reversibility (n x 1)
 % model.c             Objective coefficients: 1 if objective, 0 if other (n x 1)
 %
+% 01/08/2016 Meghan Thommes - eliminated loops
 % 01/04/2016 Meghan Thommes - added ID & b fields
 % 09/15/2015 Meghan Thommes
 
@@ -45,35 +46,19 @@ model.S = MATLAB_model.S; % stoichiometric matrix (m x n)
 [numMets,numRxns] = size(model.S);
 
 % Metabolites
-model.mets = cell(numMets,1);
-model.metNames = cell(numMets,1);
-model.metCompts = cell(numMets,1);
-model.metFormulas = cell(numMets,1);
+model.mets = {MATLAB_model.Metabolites.ID}'; % metabolite IDs (m x 1)
+model.metNames = {MATLAB_model.Metabolites.Name}'; % metabolite names (m x 1)
+model.metCompts = {MATLAB_model.Metabolites.Compartment}'; % metabolite compartments (m x 1)
+model.metFormulas = {MATLAB_model.Metabolites.Formula}'; % metabolite chemical formula (m x 1)
 model.b = zeros(numMets,1);
-for met = 1:numMets
-    model.mets{met} = MATLAB_model.Metabolites(met).ID; % metabolite IDs (m x 1)
-    model.metNames{met} = MATLAB_model.Metabolites(met).Name; % metabolite names (m x 1)
-    model.metCompts{met} = MATLAB_model.Metabolites(met).Compartment; % metabolite compartments (m x 1)
-    model.metFormulas{met} = MATLAB_model.Metabolites(met).Formula;   % metabolite chemical formula (m x 1)
-end
 
 % Reactions
-model.rxns = cell(numRxns,1);
-model.rxnNames = cell(numRxns,1);
-model.rxnCompts = cell(numRxns,1);
-model.lb = zeros(numRxns,1);
-model.ub = zeros(numRxns,1);
-model.rev = zeros(numRxns,1);
-model.c = zeros(numRxns,1);
-for rxn = 1:numRxns
-    model.rxns{rxn} = MATLAB_model.Reactions(rxn).ID; % reaction IDs (n x 1)
-    model.rxnNames{rxn} = MATLAB_model.Reactions(rxn).Name; % eaction names (n x 1)
-    model.rxnCompts{rxn} = MATLAB_model.Reactions(rxn).Compartment; % reaction compartments (n x 1)
-    model.lb(rxn) = MATLAB_model.Reactions(rxn).LowerBound; % lower bounds (n x 1)
-    model.ub(rxn) = MATLAB_model.Reactions(rxn).UpperBound; % upper bounds (n x 1)
-    model.rev(rxn) = MATLAB_model.Reactions(rxn).Reversible; % reaction reversibility (n x 1)
-    model.c(rxn) = MATLAB_model.Reactions(rxn).ObjectiveCoefficient; % objective coefficients (n x 1)
-end
-
+model.rxns = {MATLAB_model.Reactions.ID}'; % reaction IDs (n x 1)
+model.rxnNames = {MATLAB_model.Reactions.Name}'; % reaction names (n x 1)
+model.rxnCompts = {MATLAB_model.Reactions.Compartment}'; % reaction compartments (n x 1)
+model.lb = [MATLAB_model.Reactions.LowerBound]'; % lower bounds (n x 1)
+model.ub = [MATLAB_model.Reactions.UpperBound]'; % upper bounds (n x 1)
+model.rev = [MATLAB_model.Reactions.Reversible]'; % reaction reversibility (n x 1)
+model.c = [MATLAB_model.Reactions.ObjectiveCoefficient]'; % objective coefficients (n x 1)
 
 end
