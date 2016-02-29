@@ -1,4 +1,4 @@
-function comets_output = run_COMETS(run_COMETS_folder)
+function comets_output = run_comets(run_COMETS_folder)
 %run_COMETS Run COMETS without a GUI from MATLAB
 %
 %comets_output = run_COMETS(run_COMETS_folder)

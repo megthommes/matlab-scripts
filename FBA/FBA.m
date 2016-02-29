@@ -25,23 +25,6 @@ function [FBA_solution] = FBA(model,excRxns)
 %   FBA_solution.shadowPrices      Shadow prices (dual values)
 %   FBA_solution.reducedCosts      Reduced costs
 %   FBA_solution.status            Status (optimal, infeasible)
-
-%   FBA_solution.status:       Status
-%   FBA_solution.versioninfo:  Version of Gurobi used
-%   FBA_solution.objval:       Objective value
-%   FBA_solution.runtime:      Wall-clock time (in seconds) for the
-%                              optimization
-%   FBA_solution.x:            Computed solution
-%   FBA_solution.slack:        Constraint slack
-%   FBA_solution.pi:           Dual values
-%   FBA_solution.rc:           Reduced cost
-%   FBA_solution.vbasis:       Variable basis status values for the
-%                              computed optimal basis
-%   FBA_solution.cbasis:       Constraint basis status values for the
-%                              computed optimal basis
-%   FBA_solution.itercount:    Number of simplex iterations performed
-%   FBA_solution.baritercount: Number of barrier iterations performed
-%   FBA_solution.nodecount:    Number of branch-and-cut nodes explored
 %
 % Meghan Thommes 4/9/2015 - Added vtype to FBA_model & renamed FBA_solution parameters
 % Meghan Thommes 1/14/2015

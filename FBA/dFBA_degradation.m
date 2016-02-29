@@ -23,7 +23,7 @@ function [time,biomass,mets_amt,exchange_rates,flux,ec_mets] = dFBA_degradation(
 %OPTIONAL INPUTS - dFBA Paramters
 %NOTE: Specify default using '' not ~
 % Km: binding constant [mM]
-%   default = 0.01
+%   default = 0.01 
 % Vmax: [mmol/gCDW/hr]
 %   default = -10
 % dt: time step [hr]
