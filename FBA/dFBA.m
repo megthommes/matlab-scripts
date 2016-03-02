@@ -65,6 +65,8 @@ elseif (nargin==3)
     end
 end
 
+%% Define Parameter Values
+
 % Set defaults for optional inputs
 optargs = {0.01.*ones(length(model),1) -10.*ones(length(model),1) 0.1 ...
     200 1E-5.*ones(length(model),1) 2.2E-4.*ones(length(model),1)};
@@ -97,23 +99,26 @@ end
 
 %% Match Exchange Reactions to Extracellular Metabolites
 
+media = cell(size(model));
+ec_rxns_idx = cell(size(model));
+
 for numModel = 1:length(model)
     [isMet, index] = ismember(model{numModel}.mets,ec_mets);
     media{numModel} = index(isMet); % extracellular mets in model mets - index into extracellular mets
     clear isMet index
-    [ec_rxns{numModel},~] = findRxnsFromMets(model{numModel},ec_mets(media{numModel})); % model rxns of extracellular mets - index into model rxns
+    [ec_rxns_idx{numModel},~] = findRxnsFromMets(model{numModel},ec_mets(media{numModel})); % model rxns of extracellular mets - index into model rxns
+    ec_rxns_idx{numModel} = find(ec_rxns_idx{numModel} == 1);
 end
 
 %% Set Initial Metabolites
 
 mets_amt_0 = zeros(size(ec_mets));
-[isMet, index] = ismember(media_names,ec_mets); % media in extracellular mets
-mets_amt_0(index(isMet)) = media_mol;
-clear isMet index
+[~,media_names_idx,ec_mets_idx] = intersect(media_names,ec_mets,'stable');
+mets_amt_0(ec_mets_idx) = media_mol(media_names_idx);
 
 %% Initalize Vectors
 
-time = [0:dt:N*dt]'; % time
+time = (0:dt:N*dt)'; % time
 mets_amt = zeros(N+1,length(mets_amt_0)); % metabolite abundance [mmol]
 mets_amt(1,:) = mets_amt_0; % metabolite abundance at t=0 [mmol]
 biomass = cell(length(model),1); % biomass [gCDW] 
@@ -127,7 +132,7 @@ for numModel = 1:length(model)
     biomass{numModel} = zeros(N+1,1); % biomass [gCDW]
     biomass{numModel}(1) = biomass_0(numModel); % biomass at t=0 [gCDW]
     exchange_rates{numModel} = zeros(N+1,length(mets_amt_0));  % metabolite exchange flux [mmol/gCDW*hr]
-    Vuptake_max{numModel} = model{numModel}.lb(ec_rxns{numModel})'; % maximum metabolite flux [mmol/gCDW*hr]
+    Vuptake_max{numModel} = model{numModel}.lb(ec_rxns_idx{numModel})'; % maximum metabolite flux [mmol/gCDW*hr]
     Vmax{numModel} = vmax(numModel).*ones(1,length(mets_amt_0(media{numModel}))); % Michaelis-Menten max reaction rate [mmol/gCDW/hr]
     Km{numModel} = km(numModel).*ones(1,length(mets_amt_0(media{numModel}))); % Michaelis-Menten constant [mM]
 end
@@ -158,7 +163,7 @@ for n = 1:N
             flux{numModel}(n+1,:) = FBA_solution.fluxes';
         else
             growth_rate = 0;
-            exchange_rates{numModel}(n+1,media{numModel}) = zeros(1,sum(ec_rxns{numModel}));
+            exchange_rates{numModel}(n+1,media{numModel}) = zeros(1,sum(ec_rxns_idx{numModel}));
             flux{numModel}(n+1,:) = zeros(size(model{numModel}.rxns'));
         end
         
