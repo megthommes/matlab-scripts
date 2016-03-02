@@ -41,8 +41,9 @@ function [time,biomass,mets_amt,exchange_rates,flux,ec_mets] = dFBA(model,media_
 % exchange_rates: cell matrix of media fluxes {organism}[time x mets]
 % flux: cell matrix of all fluxes {organism}[time x rxns]
 % ec_mets: vector of all the extraceullular media concentration names
-
-% Meghan Thommes 9/3/2015
+%
+% Meghan Thommes 03/01/2016 - Updated Initializing Metabolites
+% Meghan Thommes 09/03/2015
 
 %% Check Inputs
 
@@ -163,7 +164,7 @@ for n = 1:N
             flux{numModel}(n+1,:) = FBA_solution.fluxes';
         else
             growth_rate = 0;
-            exchange_rates{numModel}(n+1,media{numModel}) = zeros(1,sum(ec_rxns_idx{numModel}));
+            exchange_rates{numModel}(n+1,media{numModel}) = zeros(1,length(ec_rxns_idx{numModel}));
             flux{numModel}(n+1,:) = zeros(size(model{numModel}.rxns'));
         end
         
