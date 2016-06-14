@@ -15,18 +15,21 @@ function [rxns_idx,rxns] = findRxnsFromMets(model,metNames)
 % rxns_idx is a numeric array with the indices of the reactions
 % rxns is a cell array with the reaction names
 %
-%5/12/15 Meghan Thommes
-
-% Exchange Reactions
-[excRxns,~] = findExchRxns(model);
+% Meghan Thommes 06/14/2016 - New method to find exchange metabolites
+% Meghan Thommes 05/12/2015
 
 % Metabolites
-[isMet, index] = ismember(metNames,model.mets);
-mets_idx = index(isMet)'; % index in model.mets
-rxns_idx = full((sum(model.S(mets_idx,:)==-1,1) == 1) & (sum(model.S(mets_idx,:)~=0) == 1))';
-rxns_idx(excRxns-rxns_idx ~= 0) = 0; % index in model.rxns
+[~,~,mets_idx] = intersect(metNames,model.mets); % index in model.mets
+rxns_idx = zeros(size(mets_idx));
+for idx = 1:length(mets_idx)
+    idx_neg1 = find(model.S(mets_idx(idx),:) == -1); % find where met coeff = -1
+    rxns_idx(idx) = idx_neg1(sum(full(model.S(:,idx_neg1)),1) == -1); % find column with only coeff = -1
+    clear idx_neg1
+end
 
 rxns = model.rxnNames(rxns_idx);
 
 end
+
+
 
