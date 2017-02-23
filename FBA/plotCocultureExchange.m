@@ -2,8 +2,8 @@ function [fig_handle,axes_handle,mets_handle] = plotCocultureExchange(model1_flu
 %PLOTCOCULTUREEXCHANGE Plots the flux of model 2 versus the flux of model 1
 %with arrows pointing in the direction of flux change from time point t to
 %time point t+dt
-%   [fig_handle,axes_handle] = PLOTCOCULTUREEXCHANGE(model1_flux,model2_flux)
-%   [fig_handle,axes_handle] = PLOTCOCULTUREEXCHANGE(model1_flux,model2_flux,dt,arrow_scale,met_idx,h)
+%   [fig_handle,axes_handle,mets_handle] = PLOTCOCULTUREEXCHANGE(model1_flux,model2_flux)
+%   [fig_handle,axes_handle,mets_handle] = PLOTCOCULTUREEXCHANGE(model1_flux,model2_flux,dt,arrow_scale,met_idx,h)
 %
 % REQUIRED INPUTS
 % model1_flux, model2_flux: matrix of extracellular metabolite flux over time [time x metabolites]
