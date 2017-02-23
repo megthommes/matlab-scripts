@@ -1,8 +1,8 @@
-function [model] = process_flux_all(flux_all,sparse_con,S_info,rxns,numModels)
+function [model_flux] = process_flux_all(flux_all,sparse_con,S_info,rxns,numModels)
 %%PROCESS_FLUX_ALL process flux_all into data that can be parsed and
 %%created into Escher flux maps
 %
-% model = PROCESS_FLUX_ALL(flux_all,sparse_con,S,numModels)
+% model = PROCESS_FLUX_ALL(flux_all,sparse_con,S_info,rxns,numModels)
 %
 %REQUIRED INPUT
 % flux_all: output of the reaction-constraint algorithm, matrix [rxns x sparse_con]
@@ -18,14 +18,18 @@ function [model] = process_flux_all(flux_all,sparse_con,S_info,rxns,numModels)
 % numModels: number of models flux_all needs to be partitioned into
 %
 %OUTPUT
-% model: cell structure that contains the following fields:
+% model_flux: cell structure that contains the following fields:
 %   sparse_con: sparsity constraints, vector
 %   rxns: reaction names, vector
 %   biomass: biomass flux, vector
 %   flux: reaction fluxes, matrix [rxns x sparse_con]
 %   int: reaction binary variables t, matrix [rxns x sparse_con]
+%   exch_idx: index of exchange ("uptake") reactions
+%   trspt_idx: index of transport ("exchange") reactions
+%   intl_idx: index of intracellular ("internal") reactions
 %
-% Meghan Thommes 1/11/2017
+% Meghan Thommes 02/23/2017
+% Meghan Thommes 01/11/2017
 
 %% Reassign Model Labels
 
@@ -35,15 +39,19 @@ if numModels == 1 % 1 Model
     intl_flux = (1:S_info.N_i-1) + trspt_flux(end); % intracellular/internal reaction flux
     intl_int = (1:S_info.N_i-1) + intl_flux(end); % intracellular/internal reaction binary variable t
     
-    model{1}.sparse_con = sparse_con;
-    model{1}.rxns = rxns([exch_flux, trspt_flux, intl_flux]);
-    model{1}.biomass = flux_all(S_info.bio_idx,:);
-    model{1}.flux = flux_all([exch_flux trspt_flux intl_flux],:);
-    model{1}.int = [repmat([ones(numel(exch_flux),1); ones(numel(trspt_flux),1)],1,numel(sparse_con)); flux_all(intl_int,:)];
+    model_flux{1}.sparse_con = sparse_con;
+    model_flux{1}.rxns = rxns([exch_flux, trspt_flux, intl_flux]);
+    model_flux{1}.biomass = flux_all(S_info.bio_idx,:);
+    model_flux{1}.flux = flux_all([exch_flux trspt_flux intl_flux],:);
+    model_flux{1}.int = [repmat([ones(numel(exch_flux),1); ones(numel(trspt_flux),1)],1,numel(sparse_con)); flux_all(intl_int,:)];
     % Add ATPM Reaction
-    model{1}.rxns{end+1} = S_info.atpm_name;
-    model{1}.flux(end+1,:) = S_info.atpm_value.*ones(1,numel(sparse_con));
-    model{1}.int(end+1,:) = 1;
+    model_flux{1}.rxns{end+1} = S_info.atpm_name;
+    model_flux{1}.flux(end+1,:) = S_info.atpm_value.*ones(1,numel(sparse_con));
+    model_flux{1}.int(end+1,:) = 1;
+    % Reaction Indices
+    model_flux{1}.exch_idx = exch_flux;
+    model_flux{1}.trspt_idx = trspt_flux;
+    model_flux{1}.intl_idx = intl_flux;
     
     clear exch* trspt* intl*
 elseif numModels == 2 % 2 Models
@@ -107,27 +115,36 @@ elseif numModels == 2 % 2 Models
         M2_int(:,ii) = newM2_int(:,ii);
     end
     % model 1
-    model{1}.sparse_con = sparse_con;
-    model{1}.rxns = rxns([exch_flux, trspt_flux1, intl_flux1]);
-    [~,~,bio_idx] = intersect(rxns(S_info.bio_idx),model{1}.rxns);
-    model{1}.biomass = M1_flux(bio_idx,:);
-    model{1}.flux = M1_flux;
-    model{1}.int = M1_int;
+    model_flux{1}.sparse_con = sparse_con;
+    model_flux{1}.rxns = rxns([exch_flux, trspt_flux1, intl_flux1]);
+    [~,~,bio_idx] = intersect(rxns(S_info.bio_idx),model_flux{1}.rxns);
+    model_flux{1}.biomass = M1_flux(bio_idx,:);
+    model_flux{1}.flux = M1_flux;
+    model_flux{1}.int = M1_int;
     % Add ATPM Reaction
-    model{1}.rxns{end+1} = S_info.atpm_name;
-    model{1}.flux(end+1,:) = S_info.atpm_value.*ones(1,numel(sparse_con));
-    model{1}.int(end+1,:) = 1;
+    model_flux{1}.rxns{end+1} = S_info.atpm_name;
+    model_flux{1}.flux(end+1,:) = S_info.atpm_value.*ones(1,numel(sparse_con));
+    model_flux{1}.int(end+1,:) = 1;
+    % Reaction Indices
+    model_flux{1}.exch_idx = exch_flux;
+    model_flux{1}.trspt_idx = trspt_flux1;
+    model_flux{1}.intl_idx = intl_flux1;
     % model 2
-    model{2}.sparse_con = sparse_con;
-    model{2}.rxns = rxns([exch_flux, trspt_flux1, intl_flux1]);
-    [~,~,bio_idx] = intersect(rxns(S_info.bio_idx),model{2}.rxns);
-    model{2}.biomass = M2_flux(bio_idx,:);
-    model{2}.flux = M2_flux;
-    model{2}.int = M2_int;
+    model_flux{2}.sparse_con = sparse_con;
+    model_flux{2}.rxns = rxns([exch_flux, trspt_flux1, intl_flux1]);
+    [~,~,bio_idx] = intersect(rxns(S_info.bio_idx),model_flux{2}.rxns);
+    model_flux{2}.biomass = M2_flux(bio_idx,:);
+    model_flux{2}.flux = M2_flux;
+    model_flux{2}.int = M2_int;
     % Add ATPM Reaction
-    model{2}.rxns{end+1} = S_info.atpm_name;
-    model{2}.flux(end+1,:) = S_info.atpm_value.*ones(1,numel(sparse_con));
-    model{2}.int(end+1,:) = 1;
+    model_flux{2}.rxns{end+1} = S_info.atpm_name;
+    model_flux{2}.flux(end+1,:) = S_info.atpm_value.*ones(1,numel(sparse_con));
+    model_flux{2}.int(end+1,:) = 1;
+    % Reaction Indices
+    model_flux{2}.exch_idx = exch_flux;
+    model_flux{2}.trspt_idx = trspt_flux1;
+    model_flux{2}.intl_idx = intl_flux1;
+    
     clear M* newM*
     
     clear D* exch* trspt* intl*
