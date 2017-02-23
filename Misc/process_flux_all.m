@@ -113,6 +113,10 @@ elseif numModels == 2 % 2 Models
     model{1}.biomass = M1_flux(bio_idx,:);
     model{1}.flux = M1_flux;
     model{1}.int = M1_int;
+    % Add ATPM Reaction
+    model{1}.rxns{end+1} = S_info.atpm_name;
+    model{1}.flux(end+1,:) = S_info.atpm_value.*ones(1,numel(sparse_con));
+    model{1}.int(end+1,:) = 1;
     % model 2
     model{2}.sparse_con = sparse_con;
     model{2}.rxns = rxns([exch_flux, trspt_flux1, intl_flux1]);
@@ -120,6 +124,10 @@ elseif numModels == 2 % 2 Models
     model{2}.biomass = M2_flux(bio_idx,:);
     model{2}.flux = M2_flux;
     model{2}.int = M2_int;
+    % Add ATPM Reaction
+    model{2}.rxns{end+1} = S_info.atpm_name;
+    model{2}.flux(end+1,:) = S_info.atpm_value.*ones(1,numel(sparse_con));
+    model{2}.int(end+1,:) = 1;
     clear M* newM*
     
     clear D* exch* trspt* intl*
