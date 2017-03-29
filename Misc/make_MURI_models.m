@@ -1,7 +1,8 @@
-function [MURI_models,base_MURI_model] = make_MURI_models(model,data)
+function [MURI_models,base_MURI_model] = make_MURI_models(model,data,rxn_names,rxn_bounds)
 %MAKE_MURI_MODELS Create metabolic models based on the binary variables
 %from the MURI data
 %   [MURI_models,base_MURI_model] = make_MURI_models(model,data)
+%   [MURI_models,base_MURI_model] = make_MURI_models(model,data,rxn_names,rxn_bounds)
 %
 %REQUIRED INPUTS
 % model: metabolic model used in the MURI algorithm to find binary
@@ -25,6 +26,11 @@ function [MURI_models,base_MURI_model] = make_MURI_models(model,data)
 %       exch_idx: index of exchange ("uptake") reactions
 %       trspt_idx: index of transport ("exchange") reactions
 %       intl_idx: index of intracellular ("internal") reactions
+%
+%OPTIONAL INPUTS
+% rxn_names: name of reactions that need their lower and/or upper bounds
+%   changed
+% rxn_bounds: matrix of new lower and upper bounds [lb, ub]
 %
 %OUTPUT
 % MURI_models: cell structure of the metabolic models for each of the
@@ -80,13 +86,19 @@ sol_model = pFBA(model);
 if abs(sol_model.objectiveValue - sol_base_model.objectiveValue) > tol
     disp('Error in Base Model Creation: Objective value does not match model')
 end
-% Update Glucose Exchange Lower Bound
-[~,idx_glc,~] = intersect(base_MURI_model.rxns,'EX_glc(e)');
-base_MURI_model.lb(idx_glc) = -8;
 % Reaction Indices
 exch_idx = zeros(size(base_MURI_model.rxns)); exch_idx(data.exch_idx) = 1; base_MURI_model.exch_idx = find(exch_idx(idx_data_rxns)==1);
 trspt_idx = zeros(size(base_MURI_model.rxns)); trspt_idx(data.trspt_idx) = 1; base_MURI_model.trspt_idx = find(trspt_idx(idx_data_rxns)==1);
 intl_idx = zeros(size(base_MURI_model.rxns)); intl_idx(data.intl_idx) = 1; base_MURI_model.intl_idx = find(intl_idx(idx_data_rxns)==1);
+
+% Update Exchange Lower & Upper Bounds
+if exist('rxn_names')
+    for ii = 1:numel(rxn_names)
+        [~,idx_rxn,~] = intersect(base_MURI_model.rxns,rxn_names{ii});
+        base_MURI_model.lb(idx_rxn) = rxn_bounds(ii,1);
+        base_MURI_model.ub(idx_rxn) = rxn_bounds(ii,2);
+    end
+end
 
 %% Model with Sparsity Constraints
 
