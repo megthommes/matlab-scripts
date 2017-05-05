@@ -1,14 +1,20 @@
-function [fluxType] = classifyExchange(model1_flux,model2_flux)
+function [fluxType] = classifyExchange(model1_flux,model2_flux,tol)
 %CLASSIFYEXCHANGE Classify exchange flux between two models
 %   [fluxType] = CLASSIFYEXCHANGE(model1_flux,model2_flux)
+%   [fluxType] = CLASSIFYEXCHANGE(model1_flux,model2_flux,tol)
 %
 % REQUIRED INPUTS
 % model1_flux, model2_flux: matrix of extracellular metabolite flux over time [time x metabolites]
 %
+% OPTIONAL INPUT
+% tol: tolerance
+%   if flux is less than -tolerance, it is negative
+%   if flux is greater than +tolerance, it is positive
+%      default = 1E-6
+%
 % OUTPUTS
 % fluxType: Number indicates what type of flux occurs [time x metabolites]
 %   0: not used by model 1 or model 2
-%       tol: +/- 1E-6
 %   1: produced by model 1 and model 2
 %   2: produced by model 1 and not used by model 2
 %   3: not used by model 1 and produced by model 2
@@ -17,6 +23,8 @@ function [fluxType] = classifyExchange(model1_flux,model2_flux)
 %   6: not used by model 1 and consumed by model 2
 %   7: consumed by model 1 and produced by model 2
 %   8: produced by model 1 and consumed by model 2
+%
+% Meghan Thommes 4/13/2017
 
 %% Check Input Variables
 
@@ -33,7 +41,10 @@ if nargin < 2
     error('classifyExchange:incorrectInput','Error! Not enough input variables.')
 end
 
-tol = 1E-6;
+if ~exist('tol','var')
+    tol = 1E-6;
+end
+
 %% Classify
 
 % Determine if metabolites are produced, consumed, or not used

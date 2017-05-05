@@ -247,7 +247,7 @@ C = c(ismember(nozeros,R));
 R = nozeros(ismember(nozeros,R));
 
 figure(17);
-imagesc(model2{1}.fluxType(:,sparseCon_idx_2m)); colormap(cmap);
+imagesc(model2{1}.fluxType(:,sparseCon_idx_2m)); colormap(cmap); caxis([0 8])
 c = colorbar; c.Label.String = 'Exchange Type'; c.Label.FontSize = xyLabelSize;
 c.Ticks = 0.45:8/9:8; c.TickLabels = 0:1:8;
 hold on; plot(C,R,'k*', 'LineWidth',1.1, 'MarkerSize',8); hold off
