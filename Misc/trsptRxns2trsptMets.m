@@ -15,11 +15,15 @@ function [trspt_mets_flux_total,trspt_mets,trspt_rxns] = trsptRxns2trsptMets(rxn
 % trspt_mets: Names of extracellular metabolites (labels on trspt_flux_total rows)
 % trspt_rxns: Names of transport reactions (labels on trspt_flux_total columns)
 %
+% Meghan Thommes 03/20/2017 - Changed how I identified trspt_mets (removed identifying by '[e]')
 % Meghan Thommes 02/23/2017
 
-exch_idx = find(full((sum(S==-1,1) == 1) & (sum(S~=0) == 1))'~=0);
+exchRxns_idx = find(full((sum(S==-1,1) == 1) & (sum(S~=0) == 1))'~=0);
+[exchMets_idx,~] = find(S(:,exchRxns_idx) ~= 0);
+exch_mets = mets(exchMets_idx);
+
 % Pre-Allocate
-newS = zeros(numel(exch_idx),numel(trspt_idx));
+newS = zeros(numel(exchRxns_idx),numel(trspt_idx));
 trspt_mets = cell.empty(0);
 trspt_rxns = cell.empty(0);
 num_mets = 0; % tracks number of extracellular metabolites
@@ -30,8 +34,8 @@ for ii = 1:numel(trspt_idx)
     mets_temp = mets(mets_idx); % names of metabolites associated with the transport reaction
     
     for jj = 1:numel(mets_idx) % for all metabolites in this transport reaction
-        k = strfind(mets_temp(jj),'[e]');
-        if ~isempty(k{:}) % if extracellular met
+        [~,~,k] = intersect(exch_mets,mets_temp(jj));
+        if ~isempty(k) % if extracellular met
             % Check if Metabolite is in trspt_mets
             [~,idx,~] = intersect(trspt_mets,mets(mets_idx(jj)));
             if isempty(idx) % if metabolite is NOT in trspt_mets
@@ -45,7 +49,7 @@ for ii = 1:numel(trspt_idx)
         end
     end
 end
-if numel(exch_idx) ~= numel(trspt_mets)
+if numel(exchRxns_idx) ~= numel(trspt_mets)
     disp('Length of trspt_mets is not equal to number of exchange reactions')
 end
 
