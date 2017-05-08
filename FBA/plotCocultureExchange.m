@@ -1,27 +1,29 @@
-function [fig_handle,axes_handle,mets_handle] = plotCocultureExchange(model1_flux,model2_flux,dt,arrow_scale,met_idx,h,c)
+function [fig_handle,axes_handle,met_handle] = plotCocultureExchange(model1_flux,model2_flux,dt,fig_h,axes_h,markerSize,arrowHead,lineWidth,lineColor)
 %PLOTCOCULTUREEXCHANGE Plots the flux of model 2 versus the flux of model 1
 %with arrows pointing in the direction of flux change from time point t to
 %time point t+dt
 %   [fig_handle,axes_handle,mets_handle] = PLOTCOCULTUREEXCHANGE(model1_flux,model2_flux)
-%   [fig_handle,axes_handle,mets_handle] = PLOTCOCULTUREEXCHANGE(model1_flux,model2_flux,dt,arrow_scale,met_idx,h,c)
+%   [fig_handle,axes_handle,mets_handle] = PLOTCOCULTUREEXCHANGE(model1_flux,model2_flux,dt,fig_h,axes_h,markerSize,arrowHead,lineWidth,lineColor)
 %
 % REQUIRED INPUTS
-% model1_flux, model2_flux: matrix of extracellular metabolite flux over time [time x metabolites]
+% model1_flux, model2_flux: matrix of extracellular metabolite flux over time [time x 1]
 %
 % OPTIONAL INPUTS
 % dt: time step as the number of indices (default=1)
-% arrow_scale: length of each arrow (default=1)
-% met_idx: index of metabolites to plot (default=all)
-% h: figure handle
-% c: color matrix [metabolites x 3]
+% fig_h: figure handle
+% axes_h: axes handle
+% markerSize: maximum markerSize (default=250)
+% arrowHead: length and width of each arrow (default=5)
+% lineWidth: width of the line (default=3)
+% lineColor: color of each line (default=black)
 %
 % OUTPUTS
 % fig_handle: figure handle
 % axes_handle: axes handle
-% mets_handle: handle for each metabolite plotted (size of met_idx)
+% met_handle: handle for each metabolite plotted (size of met_idx)
 %
-% Meghan Thommes 03/01/017 - Added optional input to color lines and mark
-%                            the first time step with an "x"
+% Meghan Thommes 05/05/2017 - Added x- and y-axis lines, use annotations
+%                             instead of quiver to draw arrows
 % Meghan Thommes 02/02/2017
 
 %% Check Input Variables
@@ -34,68 +36,71 @@ end
 if size(model1_flux) ~= size(model2_flux)
     error('plotCocultureExchange:incorrectInput','Error! Flux matrices must be the same size.')
 end
-% Check for optional inputs
-if nargin == 2
-    dt = 1;
-    arrow_scale = 1;
-    met_idx = 1:size(model1_flux,2);
-elseif nargin == 3
-    arrow_scale = 1;
-    met_idx = 1:size(model1_flux,2);
-elseif nargin == 4
-    met_idx = 1:size(model1_flux,2);
-elseif nargin < 2
+% Make sure have enough inputs
+if nargin < 2
     error('plotCocultureExchange:incorrectInput','Error! Not enough input variables.')
+end
+% Check for optional inputs
+if ~exist('fig_h','var')
+    fig_handle = figure;
+else
+    fig_handle = figure(fig_h);
+end
+if ~exist('axes_h','var')
+    axes_h = gca;
+end
+if ~exist('markerSize','var')
+    markerSize = 250;
+end
+if ~exist('arrowHead','var')
+    arrowHead = 1;
+end
+if ~exist('lineWidth','var')
+    lineWidth = 3;
+end
+if ~exist('lineColor','var')
+    lineColor = [0,0,0];
 end
 
 %% Plot
 
-if ~exist('h','var')
-    fig_handle = figure;
-else
-    fig_handle = figure(h);
-end
+% x-axis
+x_limits = [-ceil(max(abs(([model1_flux(:); model1_flux(:)])))), ceil(max(abs(([model1_flux(:); model1_flux(:)]))))];
+if abs(diff(x_limits)) <= 1E-3; x_limits = [x_limits(1)-1; x_limits(2)+1]; end
+plot(axes_h,x_limits(1):diff(x_limits)/2:x_limits(2),zeros(size(x_limits(1):diff(x_limits)/2:x_limits(2))),'k--', 'LineWidth',lineWidth); hold on
 
-if ~exist('c','var')
-    c = distinguishable_colors(numel(met_idx));
-end
+% y-axis
+y_limits = [-ceil(max(abs(([model2_flux(:); model2_flux(:)])))), ceil(max(abs(([model2_flux(:); model2_flux(:)]))))];
+if abs(diff(y_limits)) <= 1E-3; y_limits = [y_limits(1)-1; y_limits(2)+1]; end
+plot(axes_h,zeros(size(y_limits(1):diff(y_limits)/2:y_limits(2))),y_limits(1):diff(y_limits)/2:y_limits(2),'k--', 'LineWidth',lineWidth);
 
-% x- and y- axes
-x_limits = [floor(min(model1_flux(:))); ceil(max(model1_flux(:)))];
-if abs(diff(x_limits)) <= 1E-3; x_limits = [x_limits(1)-0.5; x_limits(2)+0.5]; end
-y_limits = [floor(min(model2_flux(:))); ceil(max(model2_flux(:)))];
-if abs(diff(y_limits)) <= 1E-3; y_limits = [y_limits(1)-0.5; y_limits(2)+0.5]; end
-plot(x_limits(1):0.1:x_limits(2),zeros(size(x_limits(1):0.1:x_limits(2))), 'k--', 'LineWidth',2); hold on % x-axis
-plot(zeros(size(y_limits(1):0.1:y_limits(2))),y_limits(1):0.1:y_limits(2), 'k--', 'LineWidth',2); % y-axis
+% line
+met_handle = plot(axes_h,model1_flux(1:dt:numel(model1_flux)),model2_flux(1:dt:numel(model1_flux)),'-','LineWidth',lineWidth, 'Color',lineColor);
 
-for mm = 1:numel(met_idx) % each metabolite
-    for tt = 1:dt:size(model1_flux,1)-dt % each time point
-        % Line between time time points 1 and 2
-        x = model1_flux([tt, tt+dt], met_idx(mm)); % x-axis
-        y = model2_flux([tt, tt+dt], met_idx(mm)); % y-axis
-        if tt == 1
-            mets_handle(mm) = plot(x,y,'x-','LineWidth',3, 'Color',c(mm,:), 'MarkerSize',10);
-        else
-            mets_handle(mm) = plot(x,y,'o-','LineWidth',3, 'Color',c(mm,:));
-        end
-        
-        % Arrow between time points 1 and 2
-        p1 = [x(1),y(1)]; % first point
-        mid_p = p1 + [diff(x),diff(y)]./2; % midway point
-        v = [diff(x), diff(y)]; % vector
-        L = sqrt(sum(v.^2)); % vector length
-        if L >= arrow_scale % only plot if vector is long enough
-            v_norm = arrow_scale.*v./L; % normalized vector
-            quiver(mid_p(1),mid_p(2), v_norm(1),v_norm(2), 'LineWidth',3, 'Color',c(mm,:), 'MaxHeadSize',1)
-        end
+% markers for relative concentration
+scatter(axes_h,model1_flux(1:dt:numel(model1_flux)),model2_flux(1:dt:numel(model1_flux)),markerSize,lineColor,'filled');
+
+% arrows
+arrowLength = 0.01;
+for tt = 1:dt:size(model1_flux,1)-dt % each time point
+    x = model1_flux([tt, tt+dt]); % x-axis
+    y = model2_flux([tt, tt+dt]); % y-axis
+    
+    % Arrow between time points 1 and 2
+    p1 = [x(1),y(1)]; % first point
+    mid_p = p1 + [diff(x),diff(y)]./2; % midway point
+    v = [diff(x), diff(y)]; v(abs(v)<1E-6) = 0; % vector
+    L = sqrt(sum(v.^2)); % vector length
+    v_norm = arrowLength.*v./L; v_norm(isnan(v_norm)) = 0; % normalized vector
+    if L > 0.1*max([x_limits(2),y_limits(2)])
+        ah = annotation(fig_h,'arrow', 'HeadStyle','vback2', 'HeadLength',arrowHead, 'HeadWidth',arrowHead);
+        set(ah, 'Parent',gca, 'Position',[mid_p(1),mid_p(2),v_norm(1),v_norm(2)], 'Color','k')
     end
 end
 hold off
 xlabel('Model 1 Exchange Flux')
 ylabel('Model 2 Exchange Flux')
 axis tight
-
-axes_handle = gca;
 
 end
 
