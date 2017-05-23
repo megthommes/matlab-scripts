@@ -4,7 +4,9 @@ function [FBA_solution] = FBA(model,exchRxns,minSumFlag)
 % Solves LP problems of the form: max/min c'*v
 %                                 subject to S*v = b
 %                                            lb <= v <= ub
-% FBA_solution = FBA(model,exchRxns)
+%
+% FBA_solution = FBA(model)
+% FBA_solution = FBA(model,exchRxns,minSumFlag)
 %
 %REQUIRED INPUT
 % The model structure must contain the following fields:
@@ -28,8 +30,8 @@ function [FBA_solution] = FBA(model,exchRxns,minSumFlag)
 %   FBA_solution.status            Status (optimal, infeasible)
 %
 % Meghan Thommes 05/16/2017 - Added secondary opimization
-% Meghan Thommes 4/9/2015 - Added vtype to FBA_model & renamed FBA_solution parameters
-% Meghan Thommes 1/14/2015
+% Meghan Thommes 04/09/2015 - Added vtype to FBA_model & renamed FBA_solution parameters
+% Meghan Thommes 01/14/2015
 
 %% Check Inputs
 
@@ -66,14 +68,21 @@ if exist('exchRxns','var') && ~isempty(exchRxns)
         end
     end
     clear allExchRxns
-elseif isempty(exchRxns)
+elseif exist('exchRxns','var') && isempty(exchRxns)
     clear exchRxns
 end
 
 if ~exist('minSumFlag','var') || isempty(minSumFlag)
     minSumFlag = false;
 end
-%%
+
+%% FBA
+
+% Uptake Exchange Reaction Bounds
+if exist('exchRxns','var')
+    model.lb(exchRxns(:,1)) = exchRxns(:,2);
+    model.ub(exchRxns(:,1)) = exchRxns(:,3);
+end
 
 % Build Model
 FBA_model.A = model.S; % stoichiometric matrix: linear constraint matrix [sparse matrix, rxns x mets]
@@ -89,12 +98,6 @@ FBA_model.vtype = 'C'; % continuous variables
 FBA_params.FeasibilityTol = 1e-9; % all values must be satisfied to this tolerance (min value)
 FBA_params.OutputFlag = 0; % silence gurobi
 FBA_params.DisplayInterval = 1; % frequency at which log lines are printed (in seconds)
-
-% Uptake Exchange Reaction Bounds
-if exist('exchRxns','var')
-    FBA_model.lb(exchRxns(:,1)) = exchRxns(:,2);
-    FBA_model.ub(exchRxns(:,1)) = exchRxns(:,3);
-end
 
 % Solving the Model: Linear Programming
 solution = gurobi(FBA_model,FBA_params);
@@ -136,6 +139,7 @@ if strcmp(solution.status,'OPTIMAL')
     end
 else
     FBA_solution.objectiveValue = NaN;
+    FBA_solution.fluxes = zeros(size(model.rxns));
     
     % Second Linear Programming Problem (minimize total flux)
     if minSumFlag == 1
