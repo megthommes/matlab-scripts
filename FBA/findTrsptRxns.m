@@ -1,7 +1,6 @@
 function [trspt_rxns] = findTrsptRxns(model)
-%%FINDTRSPTRXNS Find exchange and "nutrient" reactions
-%   trspt_rxns = FINDTRSPTRXNS(model)
-%
+%%findTrsptRxns Find transport
+%   trspt_rxns = findTrsptRxns(model)
 %
 %REQUIRED INPUT
 % The model structure must contain the following fields:
@@ -11,11 +10,10 @@ function [trspt_rxns] = findTrsptRxns(model)
 % trspt_rxns is a vector indicating the indices of the transport reactions
 %   in the model
 %
+% Meghan Thommes 07/14/2017
 % Meghan Thommes 03/02/2017
 
-%%
-
-% Check Inputs
+%% Check Inputs
 if (nargin < 1)
     error('Not enough inputs: need a model file');
 else
@@ -26,18 +24,18 @@ else
     end
 end
 
+%% Find Transport Reactions
+
 % Identify Exchange Reactions
 [exch_rxns,~] = findExchRxns(model);
-exch_rxns = find(exch_rxns ~= 0);
 % Identify Extracellular Metabolites
 [exch_mets,~] = findExchMets(model);
 
 % Identify Transport Reactions
 trspt_rxns = [];
 for ii = 1:numel(exch_mets)
-    idx = find(full(model.S(exch_mets(ii),:))~=0);
-    idx = setdiff(idx,exch_rxns);
-    trspt_rxns = [trspt_rxns, idx];
+    [~,C_0] = find(model.S(exch_mets(ii),:));
+    trspt_rxns = [trspt_rxns, setdiff(C_0,exch_rxns)];
 end
 trspt_rxns = sort(unique(trspt_rxns))';
 

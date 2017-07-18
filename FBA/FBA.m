@@ -1,4 +1,4 @@
-function [FBA_solution] = FBA(model,exchRxns,minSumFlag)
+function [FBA_solution] = FBA(model,exchRxns,minSumFlag,FBA_params)
 %%FBA Solve a flux balance analysis problem
 %
 % Solves LP problems of the form: max/min c'*v
@@ -6,7 +6,7 @@ function [FBA_solution] = FBA(model,exchRxns,minSumFlag)
 %                                            lb <= v <= ub
 %
 % FBA_solution = FBA(model)
-% FBA_solution = FBA(model,exchRxns,minSumFlag)
+% FBA_solution = FBA(model,exchRxns,minSumFlag,FBA_params)
 %
 %REQUIRED INPUT
 % The model structure must contain the following fields:
@@ -20,6 +20,9 @@ function [FBA_solution] = FBA(model,exchRxns,minSumFlag)
 % exchRxns n x 3 matrix containing the lower (column 2) and upper (column 3)
 %   bounds of exchange reactions at the specified indices (column 1)
 % minSumFlag: true if would like to minimize the sum of fluxes (default=false)
+% FBA_params: Structure containing Gurobi parameters. A full list may be
+%   found on the Parameter page of the Gurobi reference manual:
+%       https://www.gurobi.com/documentation/7.0/refman/parameters.html#sec:Parameters
 %
 %OUTPUT
 % The FBA_solution structure will contains the following fields:
@@ -29,6 +32,7 @@ function [FBA_solution] = FBA(model,exchRxns,minSumFlag)
 %   FBA_solution.reducedCosts      Reduced costs - for regular FBA only
 %   FBA_solution.status            Status (optimal, infeasible)
 %
+% Meghan Thommes 06/21/2017 - Added FBA_params as optional input
 % Meghan Thommes 05/16/2017 - Added secondary opimization
 % Meghan Thommes 04/09/2015 - Added vtype to FBA_model & renamed FBA_solution parameters
 % Meghan Thommes 01/14/2015
@@ -95,9 +99,21 @@ FBA_model.sense = '='; % sense of the linear constraints for each row of A (met 
 FBA_model.vtype = 'C'; % continuous variables
 
 % Specify FBA Parameters
-FBA_params.FeasibilityTol = 1e-9; % all values must be satisfied to this tolerance (min value)
-FBA_params.OutputFlag = 0; % silence gurobi
-FBA_params.DisplayInterval = 1; % frequency at which log lines are printed (in seconds)
+if ~exist('FBA_params','var')
+    FBA_params.FeasibilityTol = 1e-9; % all values must be satisfied to this tolerance (min value)
+    FBA_params.OutputFlag = 0; % silence gurobi
+    FBA_params.DisplayInterval = 1; % frequency at which log lines are printed (in seconds)
+else
+    if ~isfield(FBA_params,'FeasibilityTol')
+        FBA_params.FeasibilityTol = 1e-9; % all values must be satisfied to this tolerance (min value)
+    end
+    if ~isfield(FBA_params,'OutputFlag')
+        FBA_params.OutputFlag = 0; % silence gurobi
+    end
+    if ~isfield(FBA_params,'DisplayInterval')
+        FBA_params.DisplayInterval = 1; % frequency at which log lines are printed (in seconds)
+    end
+end
 
 % Solving the Model: Linear Programming
 solution = gurobi(FBA_model,FBA_params);

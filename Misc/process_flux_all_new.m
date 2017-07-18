@@ -22,6 +22,7 @@ function [model_flux] = process_flux_all_new(flux_all_data,atpm_info)
 %       biomass: biomass flux, vector
 %       flux: reaction fluxes, matrix [rxns x sparse_con]
 %       int: reaction binary variables t, matrix [rxns x sparse_con]
+%   S: stoichiometric matrix
 % atpm_info: structure, contains the following fields:
 %       atpm_name: name of ATPM reaction
 %       atpm_value: value of ATPM reaction
@@ -38,25 +39,41 @@ function [model_flux] = process_flux_all_new(flux_all_data,atpm_info)
 %   trspt_idx: index of transport ("exchange") reactions
 %   intl_idx: index of intracellular ("internal") reactions
 %
-% Meghan Thommes 03/29/2017 - Updated int so that it is actually of the size [rxns x sparse_con]
+% Meghan Thommes 05/12/2017 - Calculate exchange flux from transport flux
+%                             in 2 models
+% Meghan Thommes 03/29/2017 - Updated int so that it is actually of the 
+%                             size [rxns x sparse_con]
 % Meghan Thommes 03/03/2017 - Exclude biomass reaction from intl_idx
 % Meghan Thommes 02/28/2017
 
 %% Reassign Model Labels
 
+tol = 1E-3;
 numModels = numel(flux_all_data.model);
+temp_model = struct;
+temp_model.S = flux_all_data.S;
+
+% Pre-Allocate
+biomass = cell(numModels,1);
+flux = cell(numModels,1);
+int = cell(numModels,1);
 
 % Sparsity Constraints
-exch_idx = find(ismember(flux_all_data.flux_all_row_id,'U')~=0);
-trspt_idx = find(ismember(flux_all_data.flux_all_row_id,'E1')~=0);
-intl_idx = find(ismember(flux_all_data.flux_all_row_id,'I1')~=0);
+exch_idx = findExchRxns(temp_model);
+trspt_idx = findTrsptRxns(temp_model);
+intl_idx = setdiff(setdiff(1:numel(flux_all_data.rxns),exch_idx),trspt_idx);
 sparse_con = flux_all_data.sparse_con;
 mets = flux_all_data.mets;
 rxns = flux_all_data.rxns;
 for ii = 1:numModels
     biomass{ii} = flux_all_data.biomass(ii,:);
     flux{ii} = flux_all_data.model{ii}.flux;
-    int{ii} = [ones(numel(exch_idx)+numel(trspt_idx),numel(sparse_con)); flux_all_data.model{ii}.int];
+    flux{ii}(abs(flux{ii}) < tol) = 0;
+    if size(flux_all_data.model{ii}.int,1) == size(flux{ii})
+        int{ii} = flux_all_data.model{ii}.int;
+    else
+        int{ii} = [ones(numel(exch_idx)+numel(trspt_idx),numel(sparse_con)); flux_all_data.model{ii}.int];
+    end
 end
 % Remove Biomass Reaction from Intracellular/Internal Reactions
 [~,biomass_idx,~] = intersect(intl_idx,flux_all_data.biomass_id);
@@ -82,6 +99,22 @@ if numModels == 1 % 1 Model
     model_flux{1}.exch_idx = exch_idx;
     model_flux{1}.trspt_idx = trspt_idx;
     model_flux{1}.intl_idx = intl_idx;
+    
+    [exch_flux1,exch_mets] = trsptFlux2exchFlux(mets,flux_all_data.S,trspt_idx,flux{1}(trspt_idx,:));
+    exch_flux1(abs(exch_flux1) < tol) = 0;
+    [~,exch_mets_idx,~] = intersect(mets,exch_mets);
+    exchRxns_metsIdx = findExchRxnsFromExchMets(temp_model,exch_mets_idx);
+    % Check new exchange fluxes
+    total_flux = flux{1}(exchRxns_metsIdx,:);
+    calc_flux = exch_flux1;
+    diff_flux = total_flux - calc_flux;
+    if ~isempty(find(abs(diff_flux) > tol))
+        warning('myfuns:process_flux_all_new:IncorrectCalc', ...
+            'Incorrect calculation of exchange flux');
+    end
+    model_flux{1}.total_flux = total_flux;
+    model_flux{1}.calc_flux = calc_flux;
+    
     % Add ATPM Reaction
     model_flux{1}.rxns{end+1} = atpm_info.atpm_name;
     model_flux{1}.flux(end+1,:) = atpm_info.atpm_value;
@@ -90,7 +123,25 @@ if numModels == 1 % 1 Model
     model_flux{1}.int(end,model_flux{1}.biomass==0) = 0; % value = 0 if no biomass
     model_flux{1}.intl_idx(end+1) = numel(model_flux{1}.rxns);
 
-elseif numModels == 2 % 2 Models   
+elseif numModels == 2 % 2 Models
+    % Calculate exchange flux from transport flux
+    [exch_flux1,    ~    ] = trsptFlux2exchFlux(mets,flux_all_data.S,trspt_idx,flux{1}(trspt_idx,:));
+    exch_flux1(abs(exch_flux1) < tol) = 0;
+    [exch_flux2,exch_mets] = trsptFlux2exchFlux(mets,flux_all_data.S,trspt_idx,flux{2}(trspt_idx,:));
+    [~,exch_mets_idx,~] = intersect(mets,exch_mets);
+    exchRxns_metsIdx = findExchRxnsFromExchMets(temp_model,exch_mets_idx);
+    exch_flux2(abs(exch_flux2) < tol) = 0;    
+    % Check new exchange fluxes
+    total_flux = flux{1}(exchRxns_metsIdx,:);
+    calc_flux = exch_flux1+exch_flux2;
+    diff_flux = total_flux - calc_flux;
+    if ~isempty(find(abs(diff_flux) > tol))
+        warning('myfuns:process_flux_all_new:IncorrectCalc', ...
+            'Incorrect calculation of exchange flux');
+    end
+    flux{1}(exchRxns_metsIdx,:) = exch_flux1;
+    flux{2}(exchRxns_metsIdx,:) = exch_flux2;
+    
     % Sort Biomass According to Binary Variables   
     M1_biomass = biomass{1};
     M2_biomass = biomass{2};
@@ -102,10 +153,10 @@ elseif numModels == 2 % 2 Models
     % Classify Based on Minimum Distance
     for ii = numel(M1_biomass)-1:-1:1 % start at unconstrained       
         % Calculate Distance
-        D11 = pdist2(M1_flux(:,ii)', M1_flux(:,ii+1)'); % model 1 at this sparse_con to the previous sparse_con
-        D22 = pdist2(M2_flux(:,ii)', M2_flux(:,ii+1)'); % model 2 at this sparse_con to the previous sparse_con
-        D12 = pdist2(M1_flux(:,ii)', M2_flux(:,ii+1)'); % model 1 at this sparse_con to model 2 at the previous sparse_con
-        D21 = pdist2(M2_flux(:,ii)', M1_flux(:,ii+1)'); % model 2 at this sparse_con to model 1 at the previous sparse_con
+        D11 = pdist2(M1_int(:,ii)', M1_int(:,ii+1)'); % model 1 at this sparse_con to the previous sparse_con
+        D22 = pdist2(M2_int(:,ii)', M2_int(:,ii+1)'); % model 2 at this sparse_con to the previous sparse_con
+        D12 = pdist2(M1_int(:,ii)', M2_int(:,ii+1)'); % model 1 at this sparse_con to model 2 at the previous sparse_con
+        D21 = pdist2(M2_int(:,ii)', M1_int(:,ii+1)'); % model 2 at this sparse_con to model 1 at the previous sparse_con
         
         % Model Prediction
         if D12 < D11 || D21 < D22 % swap
@@ -135,6 +186,8 @@ elseif numModels == 2 % 2 Models
     model_flux{1}.exch_idx = exch_idx;
     model_flux{1}.trspt_idx = trspt_idx;
     model_flux{1}.intl_idx = intl_idx;
+    model_flux{1}.total_flux = total_flux;
+    model_flux{1}.calc_flux = calc_flux;
     % Add ATPM Reaction
     model_flux{1}.rxns{end+1} = atpm_info.atpm_name;
     model_flux{1}.flux(end+1,:) = atpm_info.atpm_value;
@@ -153,6 +206,8 @@ elseif numModels == 2 % 2 Models
     model_flux{2}.exch_idx = exch_idx;
     model_flux{2}.trspt_idx = trspt_idx;
     model_flux{2}.intl_idx = intl_idx;
+    model_flux{2}.total_flux = total_flux;
+    model_flux{2}.calc_flux = calc_flux;
     % Add ATPM Reaction
     model_flux{2}.rxns{end+1} = atpm_info.atpm_name;
     model_flux{2}.flux(end+1,:) = atpm_info.atpm_value;
