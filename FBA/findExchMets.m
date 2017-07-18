@@ -1,67 +1,80 @@
-function [exch_mets,nut_mets] = findExchMets(model,revFlag)
-%findExchMets Find exchange and "nutrient" metabolites
-%[exch_mets,nut_mets] = findExchMets(model,revFlag)
+function [exch_mets,med_mets] = findExchMets(model,revFlag)
+%findExchMets Find exchange and metabolites and identify "medium" metabolites
+%   [exch_mets,med_mets] = findExchMets(model)
+%   [exch_mets,med_mets] = findExchMets(model,revFlag)
 %
 %By default, findExchMets assumes that exchange reactions are written as
 %export reactions: 'A <==>'; therefore, uptaking a metabolite is a
 %negative flux and the stoichiometric coefficient of metabolite A is -1.
+%   If this is not the case, set revFlag=1.
 %
 %REQUIRED INPUT
-% The model structure must contain the following fields:
+% The model structure must contain the following field:
 %   model.S:     Stoichiometric matrix
-%   model.c:     Objective coefficients
-%   model.lb:    Lower bounds
 %
-%OPTIONAL INPUT
-% revFlag indicates if the exchange reactions are reversed ("1") or not ("0")
+%OPTIONAL INPUTS
+% The model structure my contain the following fields:
+%   model.c:     Objective coefficient
+%       If included, makes sure biomass is excluded from exch_rxns
+%   model.lb:    Lower bounds (if revFlag=0)
+%       Must be included if would like to know med_rxns
+%   model.ub:    Lower bounds (if revFlag=1)
+% revFlag: Indicates if the exchange reactions are reversed ("1") or not ("0")
 %
 %OUTPUT
-% exch_mets is a Boolean vector indicating whether each metabolite in the
-% model is an exchange ("1") or not ("0")
-%   default: "0" (false)
+% exch_mets: Vector with indices of the exchange metabolites
+% med_rxns: Vector with indices of the medium metabolites (model can use)
+%   Need to include model.lb/model.ub to compute
 %
-% nut_mets is a Boolean vector indicating whether each metabolite in the
-% model is a nutrient ("1") or not ("0")
-%   Nutrient: Lower bound is less than zero
-%
-%3/4/2015 - Meghan Thommes
+% Meghan Thommes 07/14/2017
+% Meghan Thommes 03/04/2015
 
-%%
+%% Check Inputs
 
-% Check Inputs
 if (nargin < 1)
-    error('Not enough inputs: need a model file');
+    error('myfuns:findExchMets:NotEnoughInputs', ...
+        'Not enough inputs: need a model file');
 elseif (nargin == 1)
     if ~isstruct(model)
-        error('"model" needs to be a structure');
-    elseif ~isfield(model,'S') || ~isfield(model,'c') || ~isfield(model,'lb')
-        error('"model" needs "S", "c", and "lb" fields');
+        error('myfuns:findExchMets:IncorrectInput', ...
+            '"model" needs to be a structure');
+    elseif ~isfield(model,'S')
+        error('myfuns:findExchMets:IncorrectInput', ...
+            '"model" needs "S"');
     end
     revFlag = 0;
 else
     if ~isstruct(model)
-        error('"model" needs to be a structure');
-    elseif ~isfield(model,'S') || ~isfield(model,'c') || ~isfield(model,'lb')
-        error('"model" needs "S", "c", and "lb" fields');
+        error('myfuns:findExchMets:IncorrectInput', ...
+            '"model" needs to be a structure');
+    elseif ~isfield(model,'S')
+        error('myfuns:findExchMets:IncorrectInput', ...
+            '"model" needs "S" field');
     end
 end
 
 if (nargin > 1)
     if ~isscalar(revFlag)
-        error('"revFlag" needs to be a scalar');
+        error('myfuns:findExchMets:IncorrectInput', ...
+            '"revFlag" needs to be a scalar');
     elseif (revFlag ~= 0 && revFlag ~= 1)
-        error('"revFlag" needs to be "0" or "1"');
+        error('myfuns:findExchMets:IncorrectInput', ...
+            '"revFlag" needs to be "0" or "1"');
     end
 end
 
-% Find exchange reactions
-[exch_rxns,nut_rxns] = findExchRxns(model,revFlag);
+%% Find Exchange Metabolites
 
+% Find Exchange Reactions
+[exch_rxns,med_rxns] = findExchRxns(model,revFlag);
+
+% Find Metabolites (Rows) with Non-Zero Stoichiometry
 mets_matrix = model.S(:,exch_rxns);
-[exch_mets,~] = find(mets_matrix ~= 0);
+[exch_mets,~] = find(mets_matrix);
 
-nuts_matrix = model.S(:,nut_rxns);
-[nut_mets,~] = find(nuts_matrix ~= 0);
+% Find Medium Metabolites
+med_matrix = model.S(:,med_rxns);
+[med_mets,~] = find(med_matrix);
 
 end
 
