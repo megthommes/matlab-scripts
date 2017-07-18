@@ -15,7 +15,7 @@ function [MURI_models,base_MURI_model] = make_MURI_models(model,data,rxn_names,r
 %       rxnNames: reaction names (long)
 %   	lb: lower bounds
 %   	ub: upper bounds
-% data: Structure from the output of process_flux_all_new. Must contain the
+% data: Structure from the output of process_flux_all. Must contain the
 %   following fields:
 %       sparse_con: sparsity constraints, vector
 %       mets: metabolite names, vector
@@ -81,8 +81,8 @@ base_MURI_model.ub = model.ub(idx_core_rxns);
 % Objective
 base_MURI_model.c = model.c(idx_core_rxns);
 % Check Model
-sol_base_model = pFBA(base_MURI_model);
-sol_model = pFBA(model);
+sol_base_model = FBA(base_MURI_model,'',true);
+sol_model = FBA(model,'',true);
 if abs(sol_model.objectiveValue - sol_base_model.objectiveValue) > tol
     disp('Error in Base Model Creation: Objective value does not match model')
 end

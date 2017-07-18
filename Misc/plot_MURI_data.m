@@ -42,6 +42,7 @@ xlabel('Constraint Bound for the Number of Intracellular/Internal Reactions', 'F
 ylabel('Intracellular/Internal Reactions', 'FontSize',xyLabelSize)
 title(['1 ' model_title], 'FontSize',titleSize)
 saveas(gcf,[homePath saveFolder 'int_1model'],'png');
+saveas(gcf,[homePath saveFolder 'int_1model'],'fig');
 
 figure(3);
 imagesc(model2{1}.int(:,sparseCon_idx_2m))
@@ -55,6 +56,7 @@ xlabel('Constraint Bound for the Number of Intracellular/Internal Reactions', 'F
 ylabel('Intracellular/Internal Reactions', 'FontSize',xyLabelSize)
 title(['2 ' model_title ' Models: Model 1'], 'FontSize',titleSize)
 saveas(gcf,[homePath saveFolder 'int_m1'],'png');
+saveas(gcf,[homePath saveFolder 'int_m1'],'fig');
 
 figure(4);
 imagesc(model2{2}.int(:,sparseCon_idx_2m))
@@ -68,6 +70,7 @@ xlabel('Constraint Bound for the Number of Intracellular/Internal Reactions', 'F
 ylabel('Intracellular/Internal Reactions', 'FontSize',xyLabelSize)
 title(['2 ' model_title ' Models: Model 2'], 'FontSize',titleSize)
 saveas(gcf,[homePath saveFolder 'int_m2'],'png');
+saveas(gcf,[homePath saveFolder 'int_m2'],'fig');
 
 %% Reaction Fluxes
 
@@ -75,10 +78,10 @@ flux_lim = [min([min(min(model1{1}.flux(:,sparseCon_idx_1m))), min(min(model2{1}
     min(min(model2{2}.flux(:,sparseCon_idx_2m)))]), max([max(max(model1{1}.flux(:,sparseCon_idx_1m))), ...
     max(max(model2{1}.flux(:,sparseCon_idx_2m))), max(max(model2{2}.flux(:,sparseCon_idx_2m)))])];
 
-X = model1{1}.flux(:,sparseCon_idx_1m);
-X(model1{1}.int(:,sparseCon_idx_1m) == 0) = NaN; % set t_i=0 to NaN
+model1_flux = model1{1}.flux(:,sparseCon_idx_1m);
+model1_flux(model1{1}.int(:,sparseCon_idx_1m) == 0) = NaN; % set t_i=0 to NaN
 figure(5);
-h = imagesc(X); set(h,'AlphaData',~isnan(X)); % make NaNs white
+h = imagesc(model1_flux); set(h,'AlphaData',~isnan(model1_flux)); % make NaNs white
 caxis(flux_lim); c_mets = colorbar;
 c_mets.Label.String = 'Reaction Flux (mmol/gCDW/hr)'; c_mets.Label.FontSize = xyLabelSize;
 set(gca, 'YTick',1:numel(model1{1}.rxns), 'YTickLabel',strrep(model1{1}.rxns,'_',' '), ...
@@ -88,11 +91,12 @@ xlabel('Constraint Bound for the Number of Intracellular/Internal Reactions', 'F
 ylabel('Intracellular/Internal Reactions', 'FontSize',xyLabelSize)
 title(['1 ' model_title ' Model'], 'FontSize',titleSize)
 saveas(gcf,[homePath saveFolder 'flux_1model'],'png');
+saveas(gcf,[homePath saveFolder 'flux_1model'],'fig');
 
-X = model2{1}.flux(:,sparseCon_idx_2m);
-X(model2{1}.int(:,sparseCon_idx_2m) == 0) = NaN; % set t_i=0 to NaN
+model1_flux = model2{1}.flux(:,sparseCon_idx_2m);
+model1_flux(model2{1}.int(:,sparseCon_idx_2m) == 0) = NaN; % set t_i=0 to NaN
 figure(6);
-h = imagesc(X); set(h,'AlphaData',~isnan(X)); % make NaNs white
+h = imagesc(model1_flux); set(h,'AlphaData',~isnan(model1_flux)); % make NaNs white
 caxis(flux_lim); c_mets = colorbar;
 c_mets.Label.String = 'Reaction Flux (mmol/gCDW/hr)'; c_mets.Label.FontSize = xyLabelSize;
 set(gca, 'YTick',1:numel(model2{1}.rxns), 'YTickLabel',strrep(model2{1}.rxns,'_',' '), ...
@@ -102,11 +106,12 @@ xlabel('Constraint Bound for the Number of Intracellular/Internal Reactions', 'F
 ylabel('Intracellular/Internal Reactions', 'FontSize',xyLabelSize)
 title(['2 ' model_title ' Models: Model 1'], 'FontSize',titleSize)
 saveas(gcf,[homePath saveFolder 'flux_m1'],'png');
+saveas(gcf,[homePath saveFolder 'flux_m1'],'fig');
 
-X = model2{2}.flux(:,sparseCon_idx_2m);
-X(model2{2}.int(:,sparseCon_idx_2m) == 0) = NaN; % set t_i=0 to NaN
+model1_flux = model2{2}.flux(:,sparseCon_idx_2m);
+model1_flux(model2{2}.int(:,sparseCon_idx_2m) == 0) = NaN; % set t_i=0 to NaN
 figure(7);
-h = imagesc(X); set(h,'AlphaData',~isnan(X)); % make NaNs white
+h = imagesc(model1_flux); set(h,'AlphaData',~isnan(model1_flux)); % make NaNs white
 caxis(flux_lim); c_mets = colorbar;
 c_mets.Label.String = 'Reaction Flux (mmol/gCDW/hr)'; c_mets.Label.FontSize = xyLabelSize;
 set(gca, 'YTick',1:numel(model2{2}.rxns), 'YTickLabel',strrep(model2{2}.rxns,'_',' '), ...
@@ -116,10 +121,11 @@ xlabel('Constraint Bound for the Number of Intracellular/Internal Reactions', 'F
 ylabel('Intracellular/Internal Reactions', 'FontSize',xyLabelSize)
 title(['2 ' model_title ' Models: Model 2'], 'FontSize',titleSize)
 saveas(gcf,[homePath saveFolder 'flux_m2'],'png');
+saveas(gcf,[homePath saveFolder 'flux_m2'],'fig');
 
 %% Plot Metabolite Exchange
 
-arrow_scale = 4;
+arrowHead = 3;
 % Find Metabolites with Non-Zero Flux
 [plot_idx_medium,~] = find(model2{1}.fluxType ~= 0); plot_idx_medium = (unique(plot_idx_medium));
 [~,~,med_idx] = intersect(model2{1}.medium,model2{1}.trspt_mets);
@@ -128,31 +134,48 @@ plot_idx_noMedium = setdiff(plot_idx_medium,med_idx);
 
 c_mets = cbrewer('div','Spectral',numel(model2{1}.trspt_mets));
 % Flux Exchange
-fig = figure(8);
-[~,~,mets_handle1] = plotCocultureExchange(model2{1}.trspt_flux(:,sparseCon_idx_2m)',model2{2}.trspt_flux(:,sparseCon_idx_2m)',1,arrow_scale,plot_idx_medium,fig,c_mets(plot_idx_medium,:));
-% xlim(flux_lim); ylim(flux_lim);
+fig = figure(8); ax = gca; hold on
+for ii = 1:numel(plot_idx_medium)
+    model1_flux = model2{1}.trspt_flux(plot_idx_medium(ii),sparseCon_idx_2m)';
+    model2_flux = model2{2}.trspt_flux(plot_idx_medium(ii),sparseCon_idx_2m)';
+    [~,~,mets_handle1(ii)] = plotCocultureExchange(model1_flux,model2_flux,...
+        1,fig,ax,markerSize,arrowHead,0.5*lineWidth,c_mets(plot_idx_medium(ii),:)); hold on
+end
+hold off
 set(gca, 'FontSize',axesLabelSize); grid on
 xlabel('Model 1 Extracellular Metabolite Flux', 'FontSize',xyLabelSize)
 ylabel('Model 2 Extracellular Metabolite Flux', 'FontSize',xyLabelSize)
-legend(mets_handle1,model2{1}.trspt_mets(plot_idx_medium), 'Interpreter','none', 'Location','NorthEastOutside', 'Box','Off')
+legend(mets_handle1,model2{1}.trspt_mets(plot_idx_medium), 'Interpreter','none', 'Location','NorthEastOutside', 'Box','Off', 'FontSize',4.5)
 title(['2 ' model_title ' Models: Metabolite Exchange'], 'FontSize',titleSize)
 saveas(gcf,[homePath saveFolder 'exchange_flux'],'png');
+saveas(gcf,[homePath saveFolder 'exchange_flux'],'fig');
 
 % Flux Exchange - No Metabolites from the Medium
-fig = figure(9);
-[~,~,mets_handle2] = plotCocultureExchange(model2{1}.trspt_flux(:,sparseCon_idx_2m)',model2{2}.trspt_flux(:,sparseCon_idx_2m)',1,arrow_scale,plot_idx_noMedium,fig,c_mets(plot_idx_noMedium,:));
+fig = figure(9); ax = gca; hold on
+for ii = 1:numel(plot_idx_noMedium)
+    model1_flux = model2{1}.trspt_flux(plot_idx_noMedium(ii),sparseCon_idx_2m)';
+    model2_flux = model2{2}.trspt_flux(plot_idx_noMedium(ii),sparseCon_idx_2m)';
+    [~,~,mets_handle2(ii)] = plotCocultureExchange(model1_flux,model2_flux,...
+        1,fig,ax,markerSize,arrowHead,0.5*lineWidth,c_mets(plot_idx_noMedium(ii),:)); hold on
+end
+hold off
 set(gca, 'FontSize',axesLabelSize); grid on
 xlabel('Model 1 Extracellular Metabolite Flux', 'FontSize',xyLabelSize)
 ylabel('Model 2 Extracellular Metabolite Flux', 'FontSize',xyLabelSize)
-legend(mets_handle2,model2{1}.trspt_mets(plot_idx_noMedium), 'Interpreter','none', 'Location','NorthEastOutside', 'Box','Off')
+legend(mets_handle2,model2{1}.trspt_mets(plot_idx_noMedium), 'Interpreter','none', 'Location','NorthEastOutside', 'Box','Off', 'FontSize',4.5)
 title(['2 ' model_title ' Models: Metabolite Exchange'], 'FontSize',titleSize)
 saveas(gcf,[homePath saveFolder 'exchange_flux_withoutMediumMets'],'png');
+saveas(gcf,[homePath saveFolder 'exchange_flux_withoutMediumMets'],'fig');
 
 % LogScale
-X = sign(model2{1}.trspt_flux(:,sparseCon_idx_2m)').*log10(abs(model2{1}.trspt_flux(:,sparseCon_idx_2m)')); X(isnan(X)) = 0;
-Y = sign(model2{2}.trspt_flux(:,sparseCon_idx_2m)').*log10(abs(model2{2}.trspt_flux(:,sparseCon_idx_2m)')); Y(isnan(Y)) = 0;
-fig = figure(10);
-[~,~,mets_handle2] = plotCocultureExchange(X,Y,1,1.5,plot_idx_noMedium,fig,c_mets(plot_idx_noMedium,:));
+fig = figure(10); ax = gca; hold on
+for ii = 1:numel(plot_idx_noMedium)
+    model1_flux = sign(model2{1}.trspt_flux(plot_idx_noMedium(ii),sparseCon_idx_2m)').*log10(abs(model2{1}.trspt_flux(plot_idx_noMedium(ii),sparseCon_idx_2m)')); model1_flux(isnan(model1_flux)) = 0;
+    model2_flux = sign(model2{2}.trspt_flux(plot_idx_noMedium(ii),sparseCon_idx_2m)').*log10(abs(model2{2}.trspt_flux(plot_idx_noMedium(ii),sparseCon_idx_2m)')); model2_flux(isnan(model2_flux)) = 0;
+    [~,~,mets_handle2(ii)] = plotCocultureExchange(model1_flux,model2_flux,...
+        1,fig,ax,markerSize,arrowHead,0.5*lineWidth,c_mets(plot_idx_noMedium(ii),:)); hold on
+end
+hold off
 set(gca, 'FontSize',axesLabelSize); grid on
 xlabel('Model 1 Extracellular Metabolite Flux (log10)', 'FontSize',xyLabelSize)
 ylabel('Model 2 Extracellular Metabolite Flux (log10)', 'FontSize',xyLabelSize)
@@ -257,6 +280,7 @@ xlabel('Constraint Bound for the Number of Intracellular/Internal Reactions', 'F
 ylabel('Extracellular/External Metabolites', 'FontSize',xyLabelSize)
 title(['2 ' model_title ' Models: Metabolite Exchange'], 'FontSize',titleSize)
 saveas(gcf,[homePath saveFolder 'metabolite_type'],'png');
+saveas(gcf,[homePath saveFolder 'metabolite_type'],'fig');
 
 % Heat Map of Exchange Flux: * indicates potential cross-feeding
 figure(18);
@@ -269,6 +293,7 @@ xlabel('Constraint Bound for the Number of Intracellular/Internal Reactions', 'F
 ylabel('Extracellular/External Metabolites', 'FontSize',xyLabelSize)
 title(['2 ' model_title ' Models: Extracellular Metabolite Flux'], 'FontSize',titleSize)
 saveas(gcf,[homePath saveFolder 'metabolite_totalFlux'],'png');
+saveas(gcf,[homePath saveFolder 'metabolite_totalFlux'],'fig');
 
 %% Cluster - 1 Model
 
@@ -1028,9 +1053,9 @@ lbls = {'1 Model','2 Models: Model 1','2 Models: Model 2'};
 c_lbls = [[1,0,0];[0,1,0];[0,0,1]];
 
 % Flux
-X = [model1{1}.flux(:,sparseCon_idx_1m), model2{1}.flux(:,sparseCon_idx_2m), model2{2}.flux(:,sparseCon_idx_2m)];
+model1_flux = [model1{1}.flux(:,sparseCon_idx_1m), model2{1}.flux(:,sparseCon_idx_2m), model2{2}.flux(:,sparseCon_idx_2m)];
 lbls_X = [cellstr(repmat(lbls{1},numel(sparseCon_idx_1m),1)); cellstr(repmat(lbls{2},numel(sparseCon_idx_2m),1)); cellstr(repmat(lbls{3},numel(sparseCon_idx_2m),1))];
-[~,score,~,~,explained] = pca(X');
+[~,score,~,~,explained] = pca(model1_flux');
 figure(77)
 gscatter(score(:,1),score(:,2),lbls_X,c_lbls,repmat('.',numel(lbls),1),repmat(markerSize,numel(lbls),1));
 box on; grid on
@@ -1041,9 +1066,9 @@ title([model_title ': PCA by Flux'], 'FontSize',titleSize)
 saveas(gcf,[homePath saveFolder 'pca_flux'],'png');
 
 % Int
-X = [model1{1}.int(:,sparseCon_idx_1m), model2{1}.int(:,sparseCon_idx_2m), model2{2}.int(:,sparseCon_idx_2m)];
+model1_flux = [model1{1}.int(:,sparseCon_idx_1m), model2{1}.int(:,sparseCon_idx_2m), model2{2}.int(:,sparseCon_idx_2m)];
 lbls_X = [cellstr(repmat(lbls{1},numel(sparseCon_idx_1m),1)); cellstr(repmat(lbls{2},numel(sparseCon_idx_2m),1)); cellstr(repmat(lbls{3},numel(sparseCon_idx_2m),1))];
-[~,score,~,~,explained] = pca(X');
+[~,score,~,~,explained] = pca(model1_flux');
 figure(78)
 gscatter(score(:,1),score(:,2),lbls_X,c_lbls,repmat('.',numel(lbls),1),repmat(markerSize,numel(lbls),1));
 box on; grid on
