@@ -41,13 +41,18 @@ if nargin < 2
     error('plotCocultureExchange:incorrectInput','Error! Not enough input variables.')
 end
 % Check for optional inputs
+if ~exist('dt','var')
+    dt = 1;
+end
 if ~exist('fig_h','var')
     fig_handle = figure;
 else
     fig_handle = figure(fig_h);
 end
 if ~exist('axes_h','var')
-    axes_h = gca;
+    axes_handle = gca;
+else
+    axes_handle = axes_h;
 end
 if ~exist('markerSize','var')
     markerSize = 250;
@@ -65,24 +70,24 @@ end
 %% Plot
 
 % x-axis
-x_limits = [-ceil(max(abs(([model1_flux(:); model1_flux(:)])))), ceil(max(abs(([model1_flux(:); model1_flux(:)]))))];
+x_limits = [-max(abs(([model1_flux(:); model1_flux(:)]))), max(abs(([model1_flux(:); model1_flux(:)])))];
 if abs(diff(x_limits)) <= 1E-3; x_limits = [x_limits(1)-1; x_limits(2)+1]; end
-plot(axes_h,x_limits(1):diff(x_limits)/2:x_limits(2),zeros(size(x_limits(1):diff(x_limits)/2:x_limits(2))),'k--', 'LineWidth',lineWidth); hold on
+plot(axes_handle,x_limits(1):diff(x_limits)/2:x_limits(2),zeros(size(x_limits(1):diff(x_limits)/2:x_limits(2))),'k--', 'LineWidth',lineWidth); hold on
 
 % y-axis
-y_limits = [-ceil(max(abs(([model2_flux(:); model2_flux(:)])))), ceil(max(abs(([model2_flux(:); model2_flux(:)]))))];
+y_limits = [-max(abs(([model2_flux(:); model2_flux(:)]))), max(abs(([model2_flux(:); model2_flux(:)])))];
 if abs(diff(y_limits)) <= 1E-3; y_limits = [y_limits(1)-1; y_limits(2)+1]; end
-plot(axes_h,zeros(size(y_limits(1):diff(y_limits)/2:y_limits(2))),y_limits(1):diff(y_limits)/2:y_limits(2),'k--', 'LineWidth',lineWidth);
+plot(axes_handle,zeros(size(y_limits(1):diff(y_limits)/2:y_limits(2))),y_limits(1):diff(y_limits)/2:y_limits(2),'k--', 'LineWidth',lineWidth);
 
 % line
-met_handle = plot(axes_h,model1_flux(1:dt:numel(model1_flux)),model2_flux(1:dt:numel(model1_flux)),'-','LineWidth',lineWidth, 'Color',lineColor);
+met_handle = plot(axes_handle,model1_flux(1:dt:numel(model1_flux)),model2_flux(1:dt:numel(model1_flux)),'-','LineWidth',lineWidth, 'Color',lineColor);
 
 % markers for relative concentration
-scatter(axes_h,model1_flux(1:dt:numel(model1_flux)),model2_flux(1:dt:numel(model1_flux)),markerSize,lineColor,'filled');
+scatter(axes_handle,model1_flux(1:dt:numel(model1_flux)),model2_flux(1:dt:numel(model1_flux)),markerSize,lineColor,'filled');
 
 % arrows
 arrowLength = 0.01;
-for tt = 1:dt:size(model1_flux,1)-dt % each time point
+for tt = 1:dt:numel(model1_flux)-dt % each time point
     x = model1_flux([tt, tt+dt]); % x-axis
     y = model2_flux([tt, tt+dt]); % y-axis
     

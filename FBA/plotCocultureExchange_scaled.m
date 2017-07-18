@@ -1,9 +1,9 @@
 function [fig_handle,axes_handle,met_handle] = plotCocultureExchange_scaled(model1_flux,model2_flux,met_conc,dt,fig_h,axes_h,markerSize,arrowHead,lineWidth)
 %PLOTCOCULTUREEXCHANGE Plots the flux of model 2 versus the flux of model 1
 %with arrows pointing in the direction of flux change from time point t to
-%time point t+dt. Each time point is scaled by the metabolite concentration
+%time point t+dt. Each time point color is scaled by the metabolite concentration
 %   [fig_handle,axes_handle,mets_handle] = PLOTCOCULTUREEXCHANGE(model1_flux,model2_flux)
-%   [fig_handle,axes_handle,mets_handle] = PLOTCOCULTUREEXCHANGE(model1_flux,model2_flux,met_conc,dt,fig_h,axes_h,markerSize,arrowHead,arrowLength,lineWidth)
+%   [fig_handle,axes_handle,mets_handle] = PLOTCOCULTUREEXCHANGE(model1_flux,model2_flux,met_conc,dt,fig_h,axes_h,markerSize,arrowHead,lineWidth)
 %
 % REQUIRED INPUTS
 % model1_flux, model2_flux: matrix of extracellular metabolite flux over time [time x 1]
@@ -13,7 +13,7 @@ function [fig_handle,axes_handle,met_handle] = plotCocultureExchange_scaled(mode
 % dt: time step as the number of indices (default=1)
 % fig_h: figure handle
 % axes_h: axes handle
-% markerSize: maximum markerSize (default=250)
+% markerSize: [min,max] markerSize (default=[100,250])
 % arrowHead: length and width of each arrow (default=5)
 % lineWidth: width of the line (default=3)
 %
@@ -22,6 +22,7 @@ function [fig_handle,axes_handle,met_handle] = plotCocultureExchange_scaled(mode
 % axes_handle: axes handle
 % met_handle: handle for the metabolite
 %
+% Meghan Thommes 05/10/2017 - Removed scaling size by metabolite concentration
 % Meghan Thommes 05/05/2017 - Added x- and y-axis lines, use annotations
 %                             instead of quiver to draw arrows
 % Meghan Thommes 05/04/2017 - Based off of plotCocultureExchange
@@ -76,13 +77,12 @@ met_handle = plot(axes_h,model1_flux(1:dt:numel(model1_flux)),model2_flux(1:dt:n
 
 % markers for relative concentration
 rel_conc = met_conc(1:dt:numel(model1_flux))./max(met_conc(1:dt:numel(model1_flux)));
-sz = markerSize.*rel_conc;
-sz(isnan(sz)) = 1; sz(find(sz == 0)) = 1;
-scatter(axes_h,model1_flux(1:dt:numel(model1_flux)),model2_flux(1:dt:numel(model1_flux)),sz,rel_conc,'filled');
-caxis([0 1]); colormap('parula')
+rel_conc(isnan(rel_conc)) = 0;
+scatter(axes_h,model1_flux(1:dt:numel(model1_flux)),model2_flux(1:dt:numel(model1_flux)),markerSize,rel_conc,'filled');
+caxis([0 1]); cmap = parula(100); colormap(cmap(5:end-5,:));
 
 % arrows
-arrowLength = 0.01;
+arrowLength = 0.001;
 for tt = 1:dt:numel(model1_flux)-dt % each time point
     x = model1_flux([tt, tt+dt]); % x-axis
     y = model2_flux([tt, tt+dt]); % y-axis
