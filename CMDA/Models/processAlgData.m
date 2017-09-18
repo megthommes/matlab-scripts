@@ -186,8 +186,8 @@ for model_num = 1:numModels
     end
     
     % Set Flux and Binary Variables to Zero if Biomass is Below a Certain Threshold
-    if ~isempty(intersect(find(model_flux{model_num}.biomass < alg_data.bio_lb  | model_flux{model_num}.biomass < tol),find(model_flux{model_num}.biomass ~= 0)))
-        intlCon_bioIdx = intersect(find(model_flux{model_num}.biomass < alg_data.bio_lb  | model_flux{model_num}.biomass < tol),find(model_flux{model_num}.biomass ~= 0));
+    if ~isempty(intersect(find(model_flux{model_num}.biomass < tol  | model_flux{model_num}.biomass < tol),find(model_flux{model_num}.biomass ~= 0)))
+        intlCon_bioIdx = intersect(find(model_flux{model_num}.biomass < tol  | model_flux{model_num}.biomass < tol),find(model_flux{model_num}.biomass ~= 0));
         model_flux{model_num}.biomass(intlCon_bioIdx) = 0;
         model_flux{model_num}.flux(:,intlCon_bioIdx) = 0;
         model_flux{model_num}.int(:,intlCon_bioIdx) = 0;
