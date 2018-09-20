@@ -1,5 +1,5 @@
 function [exch_mets,med_mets] = findExchMets(model,revFlag)
-%findExchMets Find exchange and metabolites and identify "medium" metabolites
+%findExchMets Find exchange metabolites and identify "medium" metabolites
 %   [exch_mets,med_mets] = findExchMets(model)
 %   [exch_mets,med_mets] = findExchMets(model,revFlag)
 %
