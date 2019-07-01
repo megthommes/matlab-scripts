@@ -10,7 +10,6 @@ function [model_flux] = processAlgData(alg_data,model,mediumRxns,tol)
 %   rxns: reaction names (short) [cell array]
 %   sparse_con: intracellular sparsity constraint [vector]
 %   trspt_con: transport sparsity constraint [vector, size of sparse_con]
-%   opt_status: secondary optimization flag (1 if min sum of fluxes, 0 if infeasible) [vector, size of sparse_con]
 %   bio_lb: lower bound on biomass flux
 %   model: Cell structure, size of the number of models reactions are allocated
 %    to. Must contain fields:
@@ -66,9 +65,9 @@ end
 if ~isstruct(alg_data)
     error('myfuns:processAlgData:IncorrectType', ...
             '"alg_data" needs to be a structure');
-elseif ~isfield(alg_data,'mets') || ~isfield(alg_data,'rxns') || ~isfield(alg_data,'sparse_con') || ~isfield(alg_data,'trspt_con') || ~isfield(alg_data,'opt_status') || ~isfield(alg_data,'model')
+elseif ~isfield(alg_data,'mets') || ~isfield(alg_data,'rxns') || ~isfield(alg_data,'sparse_con') || ~isfield(alg_data,'trspt_con') || ~isfield(alg_data,'model')
     error('myfuns:processAlgData:IncorrectType', ...
-        '"alg_data" needs "mets", "rxns", "sparse_con", "trspt_con", "opt_status", & "model" fields');
+        '"alg_data" needs "mets", "rxns", "sparse_con", "trspt_con", & "model" fields');
 end
 
 numModels = numel(alg_data.model);
@@ -146,7 +145,6 @@ for model_num = 1:numModels
     if ~issorted(alg_data.sparse_con) % if not listed in ascending order, change to ascending order
         model_flux{model_num}.intl_con = fliplr(alg_data.sparse_con);
         model_flux{model_num}.trspt_con = fliplr(alg_data.trspt_con);
-        model_flux{model_num}.opt_status = fliplr(alg_data.opt_status);
         model_flux{model_num}.mets = alg_data.mets;
         model_flux{model_num}.metNames = alg_data.metNames;
         model_flux{model_num}.rxns = alg_data.rxns;
@@ -166,7 +164,6 @@ for model_num = 1:numModels
     else % if not listed in ascending order, change to ascending order
         model_flux{model_num}.intl_con = alg_data.sparse_con;
         model_flux{model_num}.trspt_con = alg_data.trspt_con;
-        model_flux{model_num}.opt_status = alg_data.opt_status;
         model_flux{model_num}.mets = alg_data.mets;
         model_flux{model_num}.metNames = alg_data.metNames;
         model_flux{model_num}.rxns = alg_data.rxns;
@@ -185,9 +182,12 @@ for model_num = 1:numModels
         model_flux{model_num}.warningFlag.CalcExchFlux = zeros(1,numel(alg_data.sparse_con));
     end
     
+    % Make Sure Binary Variables for Exchange Reactions are 1
+    model_flux{model_num}.int(model_flux{model_num}.exch_idx,:) = 1;
+    
     % Set Flux and Binary Variables to Zero if Biomass is Below a Certain Threshold
-    if ~isempty(intersect(find(model_flux{model_num}.biomass < tol  | model_flux{model_num}.biomass < tol),find(model_flux{model_num}.biomass ~= 0)))
-        intlCon_bioIdx = intersect(find(model_flux{model_num}.biomass < tol  | model_flux{model_num}.biomass < tol),find(model_flux{model_num}.biomass ~= 0));
+    if ~isempty(intersect(find(model_flux{model_num}.biomass < tol),find(model_flux{model_num}.biomass ~= 0)))
+        intlCon_bioIdx = intersect(find(model_flux{model_num}.biomass < tol),find(model_flux{model_num}.biomass ~= 0));
         model_flux{model_num}.biomass(intlCon_bioIdx) = 0;
         model_flux{model_num}.flux(:,intlCon_bioIdx) = 0;
         model_flux{model_num}.int(:,intlCon_bioIdx) = 0;
@@ -197,7 +197,6 @@ for model_num = 1:numModels
     if model_flux{model_num}.biomass(1)~=0
         model_flux{model_num}.intl_con = [model_flux{model_num}.intl_con(1)-1, model_flux{model_num}.intl_con];
         model_flux{model_num}.trspt_con = [model_flux{model_num}.trspt_con(1), model_flux{model_num}.trspt_con];
-        model_flux{model_num}.opt_status = [model_flux{model_num}.opt_status(1), model_flux{model_num}.opt_status];
         model_flux{model_num}.biomass = [0, model_flux{model_num}.biomass];
         model_flux{model_num}.flux = [zeros(numel(model_flux{model_num}.rxns),1), model_flux{model_num}.flux];
         model_flux{model_num}.int = [zeros(numel(model_flux{model_num}.rxns),1), model_flux{model_num}.int];
@@ -207,10 +206,12 @@ for model_num = 1:numModels
             totalCalcExchFlux = [zeros(numel(exch_idx),1), totalCalcExchFlux];
         end
     end
-    
+       
     % Check that Flux=0 when t_i=0
-    t0_flux_idx = find(abs(model_flux{model_num}.flux(model_flux{model_num}.int==0)) > tol);
-    if ~isempty(t0_flux_idx)
+    t0_idx = find(model_flux{model_num}.int == 0);
+    fluxNon0_idx = find(model_flux{model_num}.flux ~= 0);
+    t0_fluxNon0_idx = intersect(t0_idx,fluxNon0_idx);
+    if ~isempty(t0_fluxNon0_idx)
         warning('myfuns:algorithm2models:ConstraintViolation', ...
             ['Model ' int2str(model_num) ' has non-zero flux when t_i=0 -- Updated flux to zero'])
         temp_flux = zeros(size(model_flux{model_num}.flux));

@@ -1,8 +1,8 @@
-function [cmda_models,cmda_base_model,model_flux] = algorithm2models(alg_data,model,model_description,mediumRxns,atpm_name)
+function [dolmn_models,dolmn_base_model,model_flux] = algorithm2models(alg_data,model,model_description,mediumRxns,atpm_name)
 %%algorithm2models Convert algorithm output to metabolic models
 %
-% [cmda_models,cmda_base_model,model_flux] = algorithm2models(alg_data,model,model_description)
-% [cmda_models,cmda_base_model,model_flux] = algorithm2models(alg_data,model,model_description,mediumRxns,atpm_name)
+% [dolmn_models,dolmn_base_model,model_flux] = algorithm2models(alg_data,model,model_description)
+% [dolmn_models,dolmn_base_model,model_flux] = algorithm2models(alg_data,model,model_description,mediumRxns,atpm_name)
 %
 %REQUIRED INPUTS
 % alg_data: Algorithm output. Structure must contain fields:
@@ -10,7 +10,6 @@ function [cmda_models,cmda_base_model,model_flux] = algorithm2models(alg_data,mo
 %   rxns: reaction names (short) [cell array]
 %   sparse_con: intracellular sparsity constraint [vector]
 %   trspt_con: transport sparsity constraint [vector, size of sparse_con]
-%   opt_status: secondary optimization flag (1 if min sum of fluxes, 0 if infeasible) [vector, size of sparse_con]
 %   model: cell structure, size of the number of models reactions are allocated
 %    to. Must contain fields:
 %       biomass: biomass flux [vector, size of sparse_con]
@@ -35,7 +34,7 @@ function [cmda_models,cmda_base_model,model_flux] = algorithm2models(alg_data,mo
 % atpm_name: name of the ATPM reaction (default = 'ATPM')
 %
 %OUTPUTS
-% cmda_models: cell structure of the metabolic models for each of the
+% dolmn_models: cell structure of the metabolic models for each of the
 % sparsity constraints in model_flux.intl_con. # of models x 1 cell array.
 % Contains the following fields:
 %   warningFlag: 0 if no warning, 1 if warning
@@ -56,13 +55,12 @@ function [cmda_models,cmda_base_model,model_flux] = algorithm2models(alg_data,mo
 %   intl_idx: index of intracellular reactions
 %   intl_con: intracellular sparsity constraint
 %   trspt_con: transport sparsity constraint
-%   flux: reaction fluxes from CMDA
-%   int: reaction binary variables from CMDA
+%   flux: reaction fluxes from dolmn
+%   int: reaction binary variables from dolmn
 %   sol: objective value from FBA
-%   opt_status: 1 if min sum of fluxes, 0 if no min sum of fluxes (algorithm)
-%   exchMets_12/exchMets_21: exchanged metabolites
-%       **Only if there are two models!
-% cmda_base_model: metabolic model without any of the sparsity constraints.
+%   exchMets_AB/exchMets_BA: exchanged metabolites between model A and model B
+%       **Only if there are two or more models!
+% dolmn_base_model: metabolic model without any of the sparsity constraints.
 %   Contains the following fields:
 %   S:  stoichiometric matrix
 %   c: objective coefficients
@@ -81,7 +79,6 @@ function [cmda_models,cmda_base_model,model_flux] = algorithm2models(alg_data,mo
 %  to. Contains fields:
 %   intl_con: intracellular sparsity constraint [vector]
 %   trspt_con: transport sparsity constraint [vector, size of sparse_con]
-%   opt_status: secondary optimization flag (1 if min sum of fluxes, 0 if infeasible) [vector, size of sparse_con]
 %   mets: metabolite names (short) [cell array]
 %   metNames: metabolite names (long) [cell array]
 %   rxns: reaction names (short) [cell array]
@@ -119,9 +116,10 @@ function [cmda_models,cmda_base_model,model_flux] = algorithm2models(alg_data,mo
 %           6: not used by model 1 and consumed by model 2 (->2)
 %           7: consumed by model 1 and produced by model 2 (2->1)
 %           8: produced by model 1 and consumed by model 2 (1->2)
-%       model1_to_model2/model2_to_model1: metabolites exchanged at each
-%           intracellular sparsity constraint. 1 if exchanged, 0 if not
-%           exchanged [matrix] (metabolites x intracellular sparsity constraint)
+%       modelA_to_modelB/modelB_to_modelA: metabolites exchanged between
+%           model A and model B at each intracellular sparsity constraint.
+%           1 if exchanged, 0 if not exchanged [matrix]
+%           (metabolites x intracellular sparsity constraint)
 %
 % Meghan Thommes 09/05/2017
 
@@ -185,6 +183,8 @@ if isempty(intersect(alg_data.rxns,atpm_name))
             alg_data.model{model_num}.int(atpm_idx,alg_data.model{model_num}.biomass==0) = 0; % value = 0 if no biomass
         end
     end
+    % Add 1 to Account for ATPM Reaction
+    alg_data.sparse_con = alg_data.sparse_con + 1;
 end
 
 %% Process Algorithm Data
@@ -195,15 +195,76 @@ model_flux = processAlgData(alg_data,model,mediumRxns,tol);
 
 if numModels == 2
     % Reassign Model Labels
-    model_flux = reassignModels(model_flux,'IntFlux');
+    model_flux = reassignModels(model_flux,'Flux');
     
-    %% Identify Exchanged Metabolites
+    % Identify Exchanged Metabolites
     model_flux = identifyExchangedMets(model_flux,tol);
+    for model_num = 1:numModels
+        exchMets = model_flux{model_num}.exchMets;
+        exchMets.fluxType12 = exchMets.fluxType;
+        exchMets = rmfield(exchMets,'fluxType');
+        model_flux{model_num}.exchMets = orderfields(exchMets,{'metNames', 'fluxType12','model1_to_model2','model2_to_model1'});
+    end
+    
+elseif numModels == 3
+    tempModel_flux = cell(2,1);
+    
+    % Identify Exchanged Metabolites - Models 1 & 2
+    tempModel_flux{1} = model_flux{1};
+    tempModel_flux{2} = model_flux{2};
+    tempModel_flux = identifyExchangedMets(tempModel_flux,tol);
+    for model_num = 1:numModels
+        exchMets = tempModel_flux{1}.exchMets;
+        exchMets.fluxType12 = exchMets.fluxType;
+        exchMets = rmfield(exchMets,'fluxType');
+        exchMets.model1_to_model2_save = exchMets.model1_to_model2;
+        exchMets.model2_to_model1_save = exchMets.model2_to_model1;
+        model_flux{model_num}.exchMets = exchMets;
+    end
+    
+    % Identify Exchanged Metabolites - Models 1 & 3
+    tempModel_flux{1} = model_flux{1};
+    tempModel_flux{2} = model_flux{3};
+    tempModel_flux = identifyExchangedMets(tempModel_flux,tol);
+    for model_num = 1:numModels
+        exchMets = tempModel_flux{1}.exchMets;
+        exchMets.fluxType13 = exchMets.fluxType;
+        exchMets = rmfield(exchMets,'fluxType');
+        exchMets.model1_to_model3 = exchMets.model1_to_model2;
+        exchMets = rmfield(exchMets,'model1_to_model2');
+        exchMets.model3_to_model1 = exchMets.model2_to_model1;
+        exchMets = rmfield(exchMets,'model2_to_model1');
+        model_flux{model_num}.exchMets = exchMets;
+    end
+    
+    % Identify Exchanged Metabolites - Models 2 & 3
+    tempModel_flux{1} = model_flux{2};
+    tempModel_flux{2} = model_flux{3};
+    tempModel_flux = identifyExchangedMets(tempModel_flux,tol);
+    for model_num = 1:numModels
+        exchMets = tempModel_flux{1}.exchMets;
+        exchMets.fluxType23 = exchMets.fluxType;
+        exchMets = rmfield(exchMets,'fluxType');
+        exchMets.model2_to_model3 = exchMets.model1_to_model2;
+        exchMets = rmfield(exchMets,'model1_to_model2');
+        exchMets.model3_to_model2 = exchMets.model2_to_model1;
+        exchMets = rmfield(exchMets,'model2_to_model1');
+        model_flux{model_num}.exchMets = exchMets;
+    end
+    
+    for model_num = 1:numModels
+        exchMets = model_flux{model_num}.exchMets;
+        exchMets.model1_to_model2 = exchMets.model1_to_model2_save;
+        exchMets = rmfield(exchMets,'model1_to_model2_save');
+        exchMets.model2_to_model1 = exchMets.model2_to_model1_save;
+        exchMets = rmfield(exchMets,'model2_to_model1_save');
+        model_flux{model_num}.exchMets = orderfields(exchMets,{'metNames', 'fluxType12','model1_to_model2','model2_to_model1', 'fluxType13','model1_to_model3','model3_to_model1', 'fluxType23','model2_to_model3','model3_to_model2'});
+    end
     
 end
 
 %% Make FBA Models
 
-[cmda_models,cmda_base_model,model_flux] = makeFBAmodels(model,model_flux,model_description,mediumRxns,tol);
+[dolmn_models,dolmn_base_model,model_flux] = makeFBAmodels(model,model_flux,model_description,mediumRxns,tol);
    
 end

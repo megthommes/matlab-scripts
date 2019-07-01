@@ -10,7 +10,6 @@ function [cmda_models,cmda_base_model,model_flux] = makeFBAmodels(model,model_fl
 %   rxns: reaction names (short) [cell array]
 %   sparse_con: intracellular sparsity constraint [vector]
 %   trspt_con: transport sparsity constraint [vector, size of sparse_con]
-%   opt_status: secondary optimization flag (1 if min sum of fluxes, 0 if infeasible) [vector, size of sparse_con]
 %   bio_lb: lower bound on biomass flux
 %   model: Cell structure, size of the number of models reactions are allocated
 %    to. Must contain fields:
@@ -36,7 +35,6 @@ function [cmda_models,cmda_base_model,model_flux] = makeFBAmodels(model,model_fl
 %  to. Contains fields:
 %   intl_con: intracellular sparsity constraint [vector]
 %   trspt_con: transport sparsity constraint [vector, size of sparse_con]
-%   opt_status: secondary optimization flag (1 if min sum of fluxes, 0 if infeasible) [vector, size of sparse_con]
 %   mets: metabolite names (short) [cell array]
 %   metNames: metabolite names (long) [cell array]
 %   rxns: reaction names (short) [cell array]
@@ -146,7 +144,6 @@ for model_num = 1:numModels
         cmda_models{model_num}{intlCon_num}.exch_idx = cmda_base_model{model_num}.exch_idx;
         cmda_models{model_num}{intlCon_num}.trspt_idx = cmda_base_model{model_num}.trspt_idx;
         cmda_models{model_num}{intlCon_num}.intl_idx = cmda_base_model{model_num}.intl_idx;
-        cmda_models{model_num}{intlCon_num}.opt_status = model_flux{model_num}.opt_status(intlCon_idx(intlCon_num));
         % If t_i=0, set lb=ub=0. If t_i=1, do not change lb or ub.
         cmda_models{model_num}{intlCon_num}.lb = cmda_models{model_num}{intlCon_num}.int.*cmda_base_model{model_num}.lb;
         cmda_models{model_num}{intlCon_num}.ub = cmda_models{model_num}{intlCon_num}.int.*cmda_base_model{model_num}.ub;
@@ -161,6 +158,28 @@ for model_num = 1:numModels
             % Model 2 to Model 1
             [idx_exchMets,~] = find(model_flux{model_num}.exchMets.model2_to_model1); idx_exchMets = unique(idx_exchMets);
             cmda_models{model_num}{intlCon_num}.exchMets_21 = exchMetsNames(idx_exchMets);
+        elseif numModels == 3
+            % Metabolite Names
+            [exchMets_idx,~] = identifyExchMets(model,model_flux{model_num}.exch_idx);
+            exchMetsNames = model_flux{model_num}.metNames(exchMets_idx);
+            % Model 1 to Model 2
+            [idx_exchMets,~] = find(model_flux{model_num}.exchMets.model1_to_model2); idx_exchMets = unique(idx_exchMets);
+            cmda_models{model_num}{intlCon_num}.exchMets_12 = exchMetsNames(idx_exchMets);
+            % Model 2 to Model 1
+            [idx_exchMets,~] = find(model_flux{model_num}.exchMets.model2_to_model1); idx_exchMets = unique(idx_exchMets);
+            cmda_models{model_num}{intlCon_num}.exchMets_21 = exchMetsNames(idx_exchMets);
+            % Model 1 to Model 3
+            [idx_exchMets,~] = find(model_flux{model_num}.exchMets.model1_to_model3); idx_exchMets = unique(idx_exchMets);
+            cmda_models{model_num}{intlCon_num}.exchMets_13 = exchMetsNames(idx_exchMets);
+            % Model 3 to Model 1
+            [idx_exchMets,~] = find(model_flux{model_num}.exchMets.model3_to_model1); idx_exchMets = unique(idx_exchMets);
+            cmda_models{model_num}{intlCon_num}.exchMets_31 = exchMetsNames(idx_exchMets);
+            % Model 2 to Model 3
+            [idx_exchMets,~] = find(model_flux{model_num}.exchMets.model2_to_model3); idx_exchMets = unique(idx_exchMets);
+            cmda_models{model_num}{intlCon_num}.exchMets_23 = exchMetsNames(idx_exchMets);
+            % Model 3 to Model 2
+            [idx_exchMets,~] = find(model_flux{model_num}.exchMets.model3_to_model2); idx_exchMets = unique(idx_exchMets);
+            cmda_models{model_num}{intlCon_num}.exchMets_32 = exchMetsNames(idx_exchMets);
         end
         
         % Check if Constraints are Violated
@@ -198,7 +217,7 @@ for model_num = 1:numModels
         exchRxns_lb(exchRxns_idx) = cmda_models{model_num}{intlCon_num}.flux(exchMets_idx); % exchanged metabolites
         exchRxns_ub = cmda_models{model_num}{intlCon_num}.ub(exch_rxns);
         sol = FBA(cmda_models{model_num}{intlCon_num}, [exch_rxns exchRxns_lb exchRxns_ub], ...
-            model_flux{model_num}.opt_status(intlCon_idx(intlCon_num)), FBA_params);
+            1, FBA_params);
         cmda_models{model_num}{intlCon_num}.sol = sol.objectiveValue;
         model_flux{model_num}.warningFlag.sol(intlCon_idx(intlCon_num)) = sol.objectiveValue;
         if sol.objectiveValue == 0 || isnan(sol.objectiveValue)
@@ -206,7 +225,7 @@ for model_num = 1:numModels
             exchRxns_lb(exchRxns_lb < 0) = 1.05.*exchRxns_lb(exchRxns_lb < 0);
             % ...Does the Model Grow Now?
             sol = FBA(cmda_models{model_num}{intlCon_num}, [exch_rxns exchRxns_lb exchRxns_ub], ...
-                model_flux{model_num}.opt_status(intlCon_idx(intlCon_num)), FBA_params);
+                1, FBA_params);
             cmda_models{model_num}{intlCon_num}.sol = sol.objectiveValue;
             model_flux{model_num}.warningFlag.sol(intlCon_idx(intlCon_num)) = sol.objectiveValue;
             % If the Model Doesn't Grow Now, Flag It
