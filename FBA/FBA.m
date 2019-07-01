@@ -89,7 +89,7 @@ if exist('exchRxns','var')
 end
 
 % Build Model
-FBA_model.A = model.S; % stoichiometric matrix: linear constraint matrix [sparse matrix, rxns x mets]
+FBA_model.A = model.S; % stoichiometric matrix: linear constraint matrix [sparse matrix, mets x rxns]
 FBA_model.obj = model.c; % linear objective vector for each each col of A (rxn in S) [dense vector]
 FBA_model.rhs = model.b; % right-hand side vector for the linear constraints for each row of A (met in S) [dense vector]
 FBA_model.lb = model.lb; % lower bounds for each col of A (rxn in S) [dense vector]
@@ -165,7 +165,23 @@ else
 end
 FBA_solution.status = solution.status;
 
+return
+%% L1-Norm
+[Nmets,Nrxns] = size(model.S);
+bioFlux = FBA_solution.objectiveValue;
+l1_model.A = [model.S, zeros(Nmets,Nrxns), zeros(Nmets,Nrxns); ...
+     eye(Nrxns,Nrxns), eye(Nrxns,Nrxns),   zeros(Nrxns,Nrxns); ...
+    -eye(Nrxns,Nrxns), zeros(Nrxns,Nrxns), eye(Nrxns,Nrxns); ...
+    [model.c; zeros(2*Nrxns,1)]'];
+l1_model.obj = [zeros(Nrxns,1); ones(2*Nrxns,1)];
+l1_model.rhs = [model.b; zeros(2*Nrxns,1); bioFlux];
+l1_model.lb = [model.lb; zeros(2*Nrxns,1)];
+l1_model.ub = [model.ub; Inf(2*Nrxns,1)];
+l1_model.modelsense = 'min';
+l1_model.sense = [repmat('=',1,Nmets), repmat('>',1,2*Nrxns+1)];
+l1_model.vtype = 'C';
 
-
+l1_sol = gurobi(l1_model,FBA_params);
+% FBA_solution.fluxes = l1_sol.x(1:Nrxns)+l1_sol.x(Nrxns+1:2*Nrxns);
 
 end
