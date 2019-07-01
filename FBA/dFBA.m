@@ -101,7 +101,7 @@ if ~exist('vmax','var') || isempty(vmax)
     vmax = 10.*ones(numel(model),1); % 
 end
 if ~exist('max_biomass','var') || isempty(max_biomass)
-    max_biomass = 2.2E-4.*ones(numel(model),1); % maximum biomass [gCDW]
+    max_biomass = ones(numel(model),1); % maximum biomass [gCDW]
 end
 
 % Thresholds below which is zero
