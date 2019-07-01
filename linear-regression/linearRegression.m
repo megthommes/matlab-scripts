@@ -10,7 +10,7 @@ function solution = linearRegression(x,y,M,opt_params)
 %           e: error/noise
 % By solving a LP problem of the form:
 %           min   |y - x*b|
-%           s.t.  -M <= B <= M
+%           s.t.  -M <= b <= M
 %
 % solution = linearRegression(x,y)
 % solution = linearRegression(x,y,M,opt_params)
@@ -130,13 +130,19 @@ rhs = [
     ];
 
 % Lower Bound
-lb = -M*ones(m+1+n,1); % B, w
+lb = [
+    -M*ones(m+1,1); % B
+        zeros(n,1); % w
+    ];
 
 % Upper Bound
 ub =  M*ones(m+1+n,1); % B, w
 
 % Objective
-obj = ones(m+1+n,1); % B, w
+obj = [
+    zeros(m+1,1); % B
+       ones(n,1); % w
+    ];
 
 % Sense on RHS
 sense = repmat('<',2*n,1);
@@ -180,13 +186,19 @@ rhs = [
     ];
 
 % Lower Bound
-lb = -M*ones(m*(m+1)+m*n,1); % B, w
+lb = [
+    -M*ones(m*(m+1),1); % B
+          zeros(m*n,1); % w
+    ];
 
 % Upper Bound
 ub =  M*ones(m*(m+1)+m*n,1); % B, w
 
 % Objective
-obj = ones(m*(m+1)+m*n,1); % B, w
+obj = [
+    zeros(m*(m+1),1); % B
+         ones(m*n,1); % w
+    ];
 
 % Sense on RHS
 sense = repmat('<',2*m*n,1);
