@@ -29,7 +29,7 @@ function solution = linearRegression(x,y,M,opt_params)
 %
 %OUTPUT
 % The solution structure will contains the following fields:
-%   solution.B: Regression coefficients [(m+1) x m matrix]
+%   solution.B: Regression coefficients [(m+1) x 1 vector or (m+1) x m matrix]
 %   solution.w: Loss [n x m matrix]
 %   solution.y: Estimated y values (X*B) [n x 1 or n x m matrix]
 %   solution.status: Status (optimal, infeasible)
@@ -103,7 +103,7 @@ else % simple linear regression
         solution.w = sol.x((m+1)+(1:n));
         solution.y = X*solution.B;
     else
-        solution.B = NaN(m+1,m);
+        solution.B = NaN(m+1,1);
         solution.w = NaN(n,m);
         solution.y = NaN(n,1);
     end
