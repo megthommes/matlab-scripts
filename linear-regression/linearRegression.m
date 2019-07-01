@@ -119,8 +119,8 @@ function model = build_simple(X,y,m,n,M)
 % A matrix
 A = [
     % |y - XB|
-    -X, -diag(ones(n,1)); %  y - XB < w
-     X, -diag(ones(n,1)); % -y + XB < w
+    -X, -eye(n); %  y - XB < w
+     X, -eye(n); % -y + XB < w
     ];
 
 % Right Hand Side
@@ -175,8 +175,8 @@ end
 % A matrix
 A = [
     % |y - XB|
-    -A_X, -diag(ones(m*n,1)); %  y - XB < w
-     A_X, -diag(ones(m*n,1)); % -y + XB < w
+    -A_X, -eye(m*n); %  y - XB < w
+     A_X, -eye(m*n); % -y + XB < w
     ];
 
 % Right Hand Side
