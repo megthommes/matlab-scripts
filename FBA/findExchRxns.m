@@ -15,10 +15,10 @@ function [exch_rxns,med_rxns] = findExchRxns(model,revFlag)
 %OPTIONAL INPUTS
 % The model structure my contain the following field:
 %   model.c:     Objective coefficient
-%       If included, makes sure biomass is excluded from exch_rxns
 %   model.lb:    Lower bounds (if revFlag=0)
-%       Must be included if would like to know med_rxns
+%       Must be included if would like to know med_rxns (when revFlag=0)
 %   model.ub:    Lower bounds (if revFlag=1)
+%       Must be included if would like to know med_rxns (when revFlag=1)
 % revFlag: Indicates if the exchange reactions are reversed ("1") or not ("0")
 %
 %OUTPUT
@@ -77,14 +77,9 @@ end
 % Count How Many Non-Zero Elements Reactions Have
 [~,C_0] = find(model.S);
 C = unique(C_0);
-N = histcounts(C_0,C);
+N = histcounts(C_0,[C; C(end)+1]);
 % Reactions with only ONE Non-Zero Elements that are Equal to +/- 1 is an Exchange Reaction
 exch_rxns = intersect(C_1,C(N == 1));
-
-% Eliminate Objective Function
-if isfield(model, 'c')
-    exch_rxns(intersect(find(model.c),exch_rxns)) = [];
-end
 
 % Find Medium Reactions
 if ~revFlag % exchange reactions are not reversed
