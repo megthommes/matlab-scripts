@@ -21,7 +21,7 @@ function [E] = calcError(y_meas,y_pred,errorFlag)
 if (nargin < 3)
     error('myfuns:calcError:NotEnoughInputs', ...
         'Not enough inputs: need y_meas, y_pred, and errorFlag');
-elseif ~strcmp(errorFlag,'MAE') || ~strcmp(errorFlag,'MSE') || ~strcmp(errorFlag,'RMSE')
+elseif ~strcmp(errorFlag,'MAE') && ~strcmp(errorFlag,'MSE') && ~strcmp(errorFlag,'RMSE')
     error('myfuns:calcError:IncorrectInput', ...
         'errorFlag must be "MAE", "MSE", or "RMSE"');
 elseif size(y_meas,1) ~= size(y_pred,1) || size(y_meas,2) ~= size(y_pred,2)
