@@ -23,18 +23,22 @@ elseif (nargin == 1)
     if ~isstruct(model)
         error('myfuns:findTrsptRxns:NotEnoughInputs', ...
             '"model" needs to be a structure');
-    elseif ~isfield(model,'S')
-        error('myfuns:findTrsptRxns:NotEnoughInputs', ...
-            '"model" needs "S" field');
+    elseif ~isfield(model,'S') && ~isfield(model,'A')
+        error('myfuns:findTrsptRxns:IncorrectInput', ...
+            '"model" needs "S"');
+    elseif ~isfield(model,'S') && isfield(model,'A')
+        model.S = model.A;
     end
     revFlag = 0;
 else
     if ~isstruct(model)
         error('myfuns:findTrsptRxns:NotEnoughInputs', ...
             '"model" needs to be a structure');
-    elseif ~isfield(model,'S')
-        error('myfuns:findTrsptRxns:NotEnoughInputs', ...
-            '"model" needs "S" field');
+    elseif ~isfield(model,'S') && ~isfield(model,'A')
+        error('myfuns:findTrsptRxns:IncorrectInput', ...
+            '"model" needs "S"');
+    elseif ~isfield(model,'S') && isfield(model,'A')
+        model.S = model.A;
     end
 end
 
