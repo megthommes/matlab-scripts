@@ -155,7 +155,7 @@ if strcmp(solution.status,'OPTIMAL')
     end
 else
     FBA_solution.objectiveValue = NaN;
-    FBA_solution.fluxes = zeros(size(model.rxns));
+    FBA_solution.fluxes = zeros(size(model.S,2),1);
     
     % Second Linear Programming Problem (minimize total flux)
     if minSumFlag == 1
