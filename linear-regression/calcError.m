@@ -1,10 +1,10 @@
 function [E] = calcError(y_meas,y_pred,errorFlag)
 %calcError Calculates the mean error
 %
-% E = calcError(y,y_hat,errorFlag)
+% E = calcError(y_meas,y_pred,errorFlag)
 %
 %REQUIRED INPUTS
-% y_true: Measured values (n x m matrix)
+% y_meas: Measured values (n x m matrix)
 % y_pred: Predicted values (n x m matrix)
 % errorFlag: Type of error to calculate
 %   MAE: mean absolute error
