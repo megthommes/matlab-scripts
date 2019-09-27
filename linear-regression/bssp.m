@@ -119,6 +119,7 @@ end
 %% Run Model
 
 sol = gurobi(model,opt_params);
+solution.objectiveValue = sol.objval;
 
 if size(y,2) > 1 % multivariate linear regression
     if strcmp(sol.status,'OPTIMAL')
