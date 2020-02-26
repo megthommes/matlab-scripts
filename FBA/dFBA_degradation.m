@@ -5,8 +5,10 @@ function [time,biomass,mets_amt,exchange_rates,flux,ec_mets] = dFBA_degradation(
 % Solves LP problems of the form: max/min c'*v
 %                                 subject to S*v = b
 %                                            lb <= v <= ub
+% With the kinetic
+%
 % [time,biomass,mets_amt,exchange_rates,flux] = dFBA(model,media_names,media_mol)
-% [time,biomass,mets_amt,exchange_rates,flux] = dFBA(model,media_names,media_mol,Km,Vmax,dt,N,biomass_0,max_biomass)
+% [time,biomass,mets_amt,exchange_rates,flux] = dFBA(model,media_names,media_mol,Km,Vmax,dt,N,biomass_0,max_biomass,volume,enzymeModel)
 %
 %REQUIRED INPUTS
 % The model structure must contain the following fields:
@@ -34,6 +36,10 @@ function [time,biomass,mets_amt,exchange_rates,flux,ec_mets] = dFBA_degradation(
 %   default = 1E-5
 % max_biomass: maximum biomass [gCDW]
 %   default = 2.2E-4
+% volume: volume [mL]
+%   default = 1
+% enzymeModel: index of the model that produces the extracellular enzymes
+%   default = 1
 %
 %OUTPUT
 % time: time vector [hr]
@@ -42,8 +48,9 @@ function [time,biomass,mets_amt,exchange_rates,flux,ec_mets] = dFBA_degradation(
 % exchange_rates: cell matrix of media fluxes {organism}[time x mets]
 % flux: cell matrix of all fluxes {organism}[time x rxns]
 % ec_mets: vector of all the extraceullular media concentration names
-
-% Meghan Thommes 9/3/2015
+%
+% Meghan Thommes 11/12/2019
+% Meghan Thommes 09/03/2015
 
 %% Check Inputs
 
@@ -67,19 +74,15 @@ elseif (nargin==3)
 end
 
 % Set defaults for optional inputs
-optargs = {0.01.*ones(length(model),1) -10.*ones(length(model),1) 0.1 ...
-    200 1E-5.*ones(length(model),1) 2.2E-4.*ones(length(model),1)};
+optargs = {0.01.*ones(length(model),1); -10.*ones(length(model),1); 0.1; ...
+    200; 1E-5.*ones(length(model),1); 2.2E-4.*ones(length(model),1); 1; 1; 1};
 % Skip new inputs if they are empty
 newVals = cellfun(@(x) ~isempty(x), varargin);
 % Overwrite parameters set by varargin
 optargs(newVals) = varargin(newVals);
 % Set values for optional inputs
-[km,vmax,dt,N,biomass_0,max_biomass] = optargs{:};
+[km,vmax,dt,N,biomass_0,max_biomass,volume,enzymeModel] = optargs{:};
 clear optargs varargin
-% volume
-volume = 1; %1E-3; % 1 mL
-% model that produces the extacellular enzymes
-enzymeModel = 1;
 
 rmpath('C:\Users\mthommes\Documents\MATLAB\cobra\');
 
@@ -99,8 +102,6 @@ for numModel = 1:length(model)
 end
 
 % Add Cellulose & Enzyme
-ec_mets{end+1} = 'cellulose[e]';
-cellulose_met_idx = length(ec_mets);
 ec_mets{end+1} = 'enzyme[e]';
 enzyme_met_idx = length(ec_mets);
 
@@ -118,24 +119,21 @@ end
 
 % Parameters
 kcat_glc = 2.5E3; % turnover rate [1/hr]
-Km_glc = 1.2; % [mM]
+Km_glc = 1.2; % binding constant [mM]
 Km_enzyme = 1; % [mM]
 Y_glc = 10; % glucose yield coefficient [mmol glucose/mmol cellulose]
 beta = 10; % [mmol enzyme/(gCDW*hr)]
 alpha = 0; % enzyme production cost [gCDW/mmol enzyme]
-
-% Cellulose Initial Amount
-cellulose_amt_0 = 1; % [mmol]
 
 % Glucose
 [isGlc, index] = ismember('glc-D[e]',ec_mets);
 glc_met_idx = index(isGlc);
 clear isGlc index
 
-% Water
-[isH2O, index] = ismember('h2o[e]',ec_mets);
-h2o_met_idx = index(isH2O);
-clear isH2O index
+% Cellulose
+[isCellulose, index] = ismember('cellulose[e]',ec_mets);
+cellulose_met_idx = index(isCellulose);
+clear isCellulose index
 
 %% Set Initial Metabolites
 
@@ -165,10 +163,6 @@ for numModel = 1:length(model)
     Vmax{numModel} = vmax(numModel).*ones(1,length(mets_amt_0(media{numModel}))); % Michaelis-Menten max reaction rate [mmol/gCDW/hr]
     Km{numModel} = km(numModel).*ones(1,length(mets_amt_0(media{numModel}))); % Michaelis-Menten constant [mM]
 end
-
-% Cellulose
-mets_amt(1,cellulose_met_idx) = cellulose_amt_0; % cellulose abundance at t=0 [mmol]
-mets_amt(1,glc_met_idx) = 1E-3; % glucose abundance at t=0 [mmol]
 
 %% Perform Dynamic Flux Balance Analysis
 
@@ -225,19 +219,15 @@ for n = 1:N
         % Calculate Glucose Amount
         % G(t+dt) = G(t) + kcat*E(t)*(C(t)/Km + C(t))*dt + v_uptake_glc*dt
         delta_glc = kcat_glc*mets_amt(n,enzyme_met_idx)*...
-            (mets_amt(n,cellulose_met_idx)*mets_amt(n,h2o_met_idx))/...
-            (Km_glc + mets_amt(n,cellulose_met_idx)*mets_amt(n,h2o_met_idx))*dt;
+            mets_amt(n,cellulose_met_idx)/...
+            (Km_glc + mets_amt(n,cellulose_met_idx))*dt;
         mets_amt(n+1,glc_met_idx) = mets_amt(n+1,glc_met_idx) + delta_glc;
         
         % Calculate Cellulose Amount
         % C(t+dt) = C(t) - (1/Y_glc)*dG
         mets_amt(n+1,cellulose_met_idx) = mets_amt(n,cellulose_met_idx) + ...
             -(1/Y_glc)*delta_glc/dt;
-        
-        % Calculate Water Amount
-        % W(t+dt) = W(t) - dG + v_uptake_glc*dt
-        mets_amt(n+1,h2o_met_idx) = mets_amt(n+1,h2o_met_idx) - delta_glc/dt;
-        
+              
         % No Negative Abundances
         mets_amt(mets_amt < 1E-9) = 0; 
         
