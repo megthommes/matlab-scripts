@@ -72,7 +72,7 @@ end
 % x-axis
 x_limits = [-max(abs(([model1_flux(:); model1_flux(:)]))), max(abs(([model1_flux(:); model1_flux(:)])))];
 if abs(diff(x_limits)) <= 1E-3; x_limits = [x_limits(1)-1; x_limits(2)+1]; end
-plot(axes_handle,x_limits(1):diff(x_limits)/2:x_limits(2),zeros(size(x_limits(1):diff(x_limits)/2:x_limits(2))),'k--', 'LineWidth',lineWidth); hold on
+plot(axes_handle,x_limits(1):diff(x_limits)/2:x_limits(2),zeros(size(x_limits(1):diff(x_limits)/2:x_limits(2))),'k--', 'LineWidth',lineWidth); hold(axes_handle,'on');
 
 % y-axis
 y_limits = [-max(abs(([model2_flux(:); model2_flux(:)]))), max(abs(([model2_flux(:); model2_flux(:)])))];
@@ -102,7 +102,7 @@ for tt = 1:dt:numel(model1_flux)-dt % each time point
         set(ah, 'Parent',gca, 'Position',[mid_p(1),mid_p(2),v_norm(1),v_norm(2)], 'Color','k')
     end
 end
-hold off
+hold(axes_handle,'off');
 xlabel('Model 1 Exchange Flux')
 ylabel('Model 2 Exchange Flux')
 axis tight
