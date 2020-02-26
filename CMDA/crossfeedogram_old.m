@@ -77,9 +77,9 @@ plot(axes_h,zeros(1,3),[-1E3,0,1E3],'k--', 'LineWidth',lineWidth);
 met_handle = plot(axes_h,model1_flux(1:dt:numel(model1_flux)),model2_flux(1:dt:numel(model1_flux)),'k-','LineWidth',lineWidth);
 
 % markers for relative concentration
-rel_conc = met_conc(1:dt:numel(model1_flux))./max(met_conc(1:dt:numel(model1_flux)));
-rel_conc(isnan(rel_conc)) = 0;
-scatter(axes_h,model1_flux(1:dt:numel(model1_flux)),model2_flux(1:dt:numel(model1_flux)),markerSize,rel_conc,'filled');
+% rel_conc = met_conc(1:dt:numel(model1_flux))./max(met_conc(1:dt:numel(model1_flux)));
+% rel_conc(isnan(rel_conc)) = 0;
+scatter(axes_h,model1_flux(1:dt:numel(model1_flux)),model2_flux(1:dt:numel(model1_flux)),'filled');
 caxis([0 1]); cmap = parula(100); colormap(cmap(5:end-5,:));
 
 % arrows
