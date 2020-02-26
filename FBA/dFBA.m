@@ -117,7 +117,11 @@ exchMets_idxInModel = cell(numel(model)); % pre-allocate
 for numModel = 1:numel(model)
     % Find Exchange Reactions and Metabolites
     [exchRxns_idxInModel{numModel},~] = findExchRxns(model{numModel});
+    [~,rm_idx,] = intersect(model{numModel}.rxns(exchRxns_idxInModel{numModel}),'EX_cpd11416_c0');
+    exchRxns_idxInModel{numModel}(rm_idx) = [];
     [exchMets_idxInModel{numModel},~] = findExchMets(model{numModel});
+    [~,rm_idx,] = intersect(model{numModel}.mets(exchMets_idxInModel{numModel}),'cpd11416_c0');
+    exchMets_idxInModel{numModel}(rm_idx) = [];
     
     % Define All the Extracellular Metabolites
     mets = setdiff(model{numModel}.mets(exchMets_idxInModel{numModel}),exchMets_names); % model mets NOT in extracellular mets
@@ -130,10 +134,10 @@ exchMets_idxInMedia = cell(size(model));
 exchRxns_idxInMedia = cell(size(model));
 
 for numModel = 1:numel(model)
-    [isMet, index] = ismember(model{numModel}.mets,exchMets_names);
-    exchMets_idxInMedia{numModel} = index(isMet); % extracellular mets in model mets - index into extracellular mets
-    clear isMet index
-    [exchRxns_idxInMedia{numModel},~] = findExchRxnsFromMets(model{numModel},exchMets_names(exchMets_idxInMedia{numModel})); % model rxns of extracellular mets - index into model rxns
+    % extracellular mets in model mets - index into extracellular mets
+    [~,exchMets_idxInMedia{numModel},~] = intersect(exchMets_names,model{numModel}.mets,'stable');
+    % model rxns of extracellular mets - index into model rxns
+    [exchRxns_idxInMedia{numModel},~] = findExchRxnsFromMets(model{numModel},exchMets_names(exchMets_idxInMedia{numModel}));
 end
 
 %% Set Initial Metabolites
@@ -182,8 +186,8 @@ for n = 1:N
         
         % Specify New Bounds
         v_uptake(v_uptake > -flux_thresh & v_uptake < 0) = 0;
-        model{numModel}.lb(exchRxns_idxInModel{numModel}) = v_uptake;
-        
+        model{numModel}.lb(exchRxns_idxInMedia{numModel}) = v_uptake;
+               
         % Calculate Growth Rate
         FBA_solution = FBA(model{numModel},'',minSumFlag);
         
@@ -195,7 +199,7 @@ for n = 1:N
         else
             growth_rate = 0;
             flux{numModel}(n+1,:) = zeros(1,numel(model{numModel}.rxns));
-            exchMets_flux = zeros(1,numel(exchRxns_idxInMedia{numModel}));
+            exchMets_flux = zeros(1,numel(exchRxns_idxInModel{numModel}));
             feasibilityFlag{numModel}{n+1} = FBA_solution.status;
         end
         
